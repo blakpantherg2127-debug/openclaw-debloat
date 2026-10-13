@@ -139,44 +139,6 @@ describe("config validation SecretRef policy", () => {
   it("allows env-template strings on mutable paths", () => {
     expect(validateConfigObjectRaw({ hooks: { token: "${HOOK_TOKEN}" } }).ok).toBe(true);
   });
-
-  it.each([false, true])("filters only the policy-owned unknown key (typo=%s)", (typo) => {
-    const result = validateConfigObjectRaw({
-      channels: {
-        discord: {
-          threadBindings: {
-            webhookToken: {
-              source: "env",
-              provider: "default",
-              id: "DISCORD_THREAD_BINDING_WEBHOOK_TOKEN",
-            },
-            ...(typo ? { webhookTokne: "typo" } : {}),
-          },
-        },
-      },
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(
-        requireIssue(result.issues, "channels.discord.threadBindings.webhookToken").message,
-      ).toContain(
-        "SecretRef objects are not supported at channels.discord.threadBindings.webhookToken",
-      );
-      if (typo) {
-        const issue = requireIssue(result.issues, "channels.discord.threadBindings");
-        expect(issue.message).toContain("webhookTokne");
-        expect(issue.message).not.toContain("webhookToken");
-      } else {
-        expect(
-          result.issues.some(
-            (issue) =>
-              issue.path === "channels.discord.threadBindings" &&
-              issue.message.includes('Unrecognized key: "webhookToken"'),
-          ),
-        ).toBe(false);
-      }
-    }
-  });
 });
 
 it("enforces the gateway TCP port range", () => {

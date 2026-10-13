@@ -1,16 +1,12 @@
 import { quickJsWorkerTestEntrypoint } from "../../extensions/code-mode-quickjs/src/worker-entrypoint.test-support.ts";
 import { codexCatalogPageWorkerEntrypoint } from "../../extensions/codex/catalog-page-worker-entrypoint.ts";
 import { codexHistoryWorkerEntrypoint } from "../../extensions/codex/session-history-worker-entrypoint.ts";
-import { discordAudioTestEntrypoints } from "../../extensions/discord/src/voice/audio-worker-entrypoints.test-support.ts";
 import { logbookSqliteBackendEntrypoint } from "../../extensions/logbook/src/sqlite-backend-entrypoint.test-support.ts";
 import { memoryForgetFaultEntrypoint } from "../../extensions/memory-core/src/memory-forget-fault-entrypoint.test-support.ts";
 import { memoryForgetPlanningObserverEntrypoint } from "../../extensions/memory-core/src/memory-forget-planning-observer-entrypoint.test-support.ts";
 import { memoryPublicationFaultEntrypoint } from "../../extensions/memory-core/src/memory/manager-publication-fault-entrypoint.test-support.ts";
 import { vectorKnnParentEntrypoint } from "../../extensions/memory-core/src/memory/manager-search-knn-runtime.test-support.ts";
 import { realtimeAudioTestEntrypoints } from "../../extensions/openai/realtime-audio-worker-entrypoints.test-support.ts";
-import { identityRepeatedTurnEntrypoint } from "../../extensions/qa-lab/src/agent-run-identity-runtime.test-support.ts";
-import { busServerShutdownEntrypoint } from "../../extensions/qa-lab/src/bus-server-runtime.test-support.ts";
-import { qaGatewayCleanupRuntimeEntrypoint } from "../../extensions/qa-lab/src/gateway-child-artifacts-runtime.test-support.ts";
 import { teamReportsSqliteBackendEntrypoint } from "../../extensions/team-reports/src/sqlite-backend-entrypoint.test-support.ts";
 import { workboardSqliteBackendEntrypoint } from "../../extensions/workboard/src/sqlite-backend-entrypoint.test-support.ts";
 import { agentCoreRetentionEntrypoints } from "../../packages/agent-core/src/retention-runtime.test-support.ts";
@@ -101,7 +97,6 @@ import { tuiPtyRuntimeEntrypoints } from "../../src/tui/tui-pty-runtime-test-sup
 import { clackPrompterProcessEntrypoint } from "../../src/wizard/clack-prompter-process-runtime.test-support.ts";
 import { nativeWorkerTestEntrypoint } from "../../src/worker/native-worker-entrypoints.test-support.ts";
 import { workerBackgroundExecEntrypoints } from "../../src/worker/worker-runtime-background-exec-entrypoints.test-support.ts";
-import { qaOtelSmokeEntrypoint } from "../../test/e2e/qa-lab/runtime/qa-otel-smoke-entrypoint.test-support.ts";
 import { channelIngressGatewayRestartEntrypoint } from "../../test/fixtures/channel-ingress-gateway-restart-entrypoint.ts";
 import { toolingNativeRuntimeEntrypoints } from "../../test/scripts/tooling-native-runtime.test-support.ts";
 import { toolingProbeRuntimeEntrypoints } from "../../test/scripts/tooling-probe-runtime.test-support.mts";
@@ -176,8 +171,6 @@ export const preservedModuleBuildSources = [
   "src/process/exec.ts",
   "src/process/spawn-broker/context.ts",
   "src/logging/subsystem.ts",
-  "extensions/matrix/src/matrix/config-update.ts",
-  "extensions/matrix/src/matrix/account-config.ts",
   "src/secrets/plugin-setup-plan.ts",
   "src/secrets/resolve.ts",
   "src/commands/sessions-cleanup.large-labels.test-support.ts",
@@ -285,10 +278,7 @@ export const vitestWorkerBuildEntries = {
     ...Object.values(diagnosticProfileEntrypoints),
     ...Object.values(sqliteMaintenanceEntrypoints),
     ...Object.values(processProbeEntrypoints),
-    busServerShutdownEntrypoint,
-    identityRepeatedTurnEntrypoint,
     vectorKnnParentEntrypoint,
-    qaOtelSmokeEntrypoint,
     ...Object.values(nativeBoundaryTestEntrypoints),
     ...Object.values(sessionNativeProcessEntrypoints),
     ...Object.values(mediaNativeProcessEntrypoints),
@@ -304,7 +294,6 @@ export const vitestWorkerBuildEntries = {
     ...Object.values(toolingNativeRuntimeEntrypoints),
     toolingProbeRuntimeEntrypoints.buildArtifactCache,
     toolingProbeRuntimeEntrypoints.buildIdentity,
-    ...Object.values(discordAudioTestEntrypoints),
     ...Object.values(realtimeAudioTestEntrypoints),
     quickJsWorkerTestEntrypoint,
     codexCatalogPageWorkerEntrypoint,
@@ -374,7 +363,6 @@ export const vitestWorkerBuildEntries = {
     channelIngressGatewayRestartEntrypoint,
     persistenceRuntimeEntrypoint,
     gitBackupCommandRuntimeEntrypoint,
-    qaGatewayCleanupRuntimeEntrypoint,
     logbookSqliteBackendEntrypoint,
     teamReportsSqliteBackendEntrypoint,
     workboardSqliteBackendEntrypoint,

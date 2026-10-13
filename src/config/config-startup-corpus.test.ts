@@ -97,54 +97,6 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 afterEach(() => vi.unstubAllEnvs());
 
 describe("operator config startup corpus", () => {
-  it("preserves ambient channel ownership when retiring Copilot discovery", async () => {
-    const home = tempDirs.make("openclaw-copilot-owner-");
-    const configPath = path.join(home, "openclaw.json");
-    fs.writeFileSync(
-      configPath,
-      JSON.stringify({
-        agents: { list: [{ id: "worker", default: true }, { id: "other" }] },
-        plugins: {
-          entries: {
-            discord: { enabled: true },
-            "github-copilot": { config: { discovery: { enabled: false } } },
-          },
-        },
-      }),
-    );
-    const env = {
-      ...process.env,
-      OPENCLAW_STATE_DIR: home,
-      DISCORD_BOT_TOKEN: "synthetic-token",
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "0",
-      OPENCLAW_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
-    };
-    for (const key of [
-      "OPENCLAW_STATE_DIR",
-      "DISCORD_BOT_TOKEN",
-      "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
-      "OPENCLAW_BUNDLED_PLUGINS_DIR",
-    ] as const) {
-      vi.stubEnv(key, env[key]);
-    }
-    const snapshot = await createConfigIO({
-      configPath,
-      env,
-      homedir: () => home,
-      observe: false,
-    }).readConfigFileSnapshot();
-    expect(snapshot.valid).toBe(false);
-    const migrated = migrateLegacyConfig(snapshot.sourceConfig, {
-      sourceConfigBeforeMigrations: snapshot.sourceConfigBeforeMigrations,
-    });
-    const validated = validateConfigObjectWithPlugins(migrated.config, { env });
-    expect(validated.ok).toBe(true);
-    expect(validated.ok && validated.config.bindings).toContainEqual({
-      agentId: "worker",
-      match: { channel: "discord", accountId: "*" },
-    });
-  });
-
   it.each([false, null])(
     "retains included Copilot discovery.enabled=%j until Doctor migrates it",
     async (enabled) => {

@@ -107,24 +107,6 @@ describe("config doc baseline integration", () => {
     expect(byPath.get("hooks.internal.handlers.*.module")).toBeUndefined();
   });
 
-  it("uses human-readable channel metadata for top-level channel sections", async () => {
-    const byPath = await getSharedByPath();
-
-    const discordEntry = requireEntry(byPath, "channels.discord");
-    expect(discordEntry.label).toBe("Discord");
-    expect(discordEntry.help).toBe("very well supported right now.");
-
-    const msteamsEntry = requireEntry(byPath, "channels.msteams");
-    expect(msteamsEntry.label).toBe("Microsoft Teams");
-    expect(msteamsEntry.help).toBe("Teams SDK; enterprise support.");
-    expect(msteamsEntry.label).not.toContain("@openclaw/");
-
-    const matrixEntry = requireEntry(byPath, "channels.matrix");
-    expect(matrixEntry.label).toBe("Matrix");
-    expect(matrixEntry.help).toBe("open protocol; install the plugin to enable.");
-    expect(matrixEntry.help).not.toContain("homeserver");
-  });
-
   it("matches array help hints that still use [] notation", async () => {
     const byPath = await getSharedByPath();
 

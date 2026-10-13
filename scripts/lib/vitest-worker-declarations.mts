@@ -57,16 +57,8 @@ export const vitestWorkerDeclarationEntries = {
     "src/gateway/worker-environments/workspace-process-runtime.test-support.ts",
   "wizard/clack-prompter-process-runtime.test-support":
     "src/wizard/clack-prompter-process-runtime.test-support.ts",
-  "extensions/qa-lab/bus-server-runtime.test-support":
-    "extensions/qa-lab/src/bus-server-runtime.test-support.ts",
-  "extensions/qa-lab/agent-run-identity-runtime.test-support":
-    "extensions/qa-lab/src/agent-run-identity-runtime.test-support.ts",
   "extensions/memory-core/manager-search-knn-runtime.test-support":
     "extensions/memory-core/src/memory/manager-search-knn-runtime.test-support.ts",
-  "test-support/qa-otel-smoke-entrypoint.test-support":
-    "test/e2e/qa-lab/runtime/qa-otel-smoke-entrypoint.test-support.ts",
-  "extensions/matrix/src/matrix/config-update-runtime.test-support":
-    "extensions/matrix/src/matrix/config-update-runtime.test-support.ts",
   "extensions/openai/realtime-audio-worker-entrypoints.test-support":
     "extensions/openai/realtime-audio-worker-entrypoints.test-support.ts",
   "extensions/code-mode-quickjs/src/worker-entrypoint.test-support":
@@ -104,8 +96,6 @@ export const vitestWorkerDeclarationEntries = {
     "packages/ai/src/providers/tool-schema-depth-runtime.test-support.ts",
   "packages/terminal-core/table-runtime.test-support":
     "packages/terminal-core/src/table-runtime.test-support.ts",
-  "extensions/discord/src/voice/audio-worker-entrypoints.test-support":
-    "extensions/discord/src/voice/audio-worker-entrypoints.test-support.ts",
   // Codex is package-owned and excluded from the root runtime bundle.
   "extensions/codex/catalog-page-worker-entrypoint":
     "extensions/codex/catalog-page-worker-entrypoint.ts",
@@ -151,8 +141,6 @@ export const vitestWorkerDeclarationEntries = {
     "src/commands/doctor-config-runtime.test-support.ts",
   "test-support/channel-ingress-gateway-restart-entrypoint":
     "test/fixtures/channel-ingress-gateway-restart-entrypoint.ts",
-  "extensions/qa-lab/gateway-child-artifacts-runtime.test-support":
-    "extensions/qa-lab/src/gateway-child-artifacts-runtime.test-support.ts",
   "plugins/loader-sdk-bridge-artifacts.test-support":
     "src/plugins/loader-sdk-bridge-artifacts.test-support.ts",
   "plugins/runtime-retention-entrypoint.test-support":

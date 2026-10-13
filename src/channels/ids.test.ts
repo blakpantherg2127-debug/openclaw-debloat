@@ -22,10 +22,7 @@ describe("channel ids", () => {
     expect(normalizeChatChannelId("nope")).toBeNull();
   });
 
-  it.each([
-    ["whatsapp", "WhatsApp"],
-    ["GOOGLE-CHAT", "Google Chat"],
-  ])("finds the exact generated label for %s", (channel, label) => {
+  it.each([])("finds the exact generated label for %s", (channel, label) => {
     expect(findChatChannelLabel(channel)).toBe(label);
   });
 

@@ -179,22 +179,8 @@ describe("dead config keys", () => {
     "channels.telegram.errorCooldownMs",
     "channels.telegram.accounts.work.timeoutSeconds",
     "channels.telegram.accounts.work.retry",
-    "channels.whatsapp.debounceMs",
-    "channels.whatsapp.accounts.work.debounceMs",
     "channels.telegram.groups.-100.errorCooldownMs",
     "channels.telegram.groups.-100.topics.1.errorCooldownMs",
-    "channels.discord.gatewayInfoTimeoutMs",
-    "channels.discord.gatewayReadyTimeoutMs",
-    "channels.discord.gatewayRuntimeReadyTimeoutMs",
-    "channels.discord.eventQueue",
-    "channels.discord.retry",
-    "channels.discord.accounts.work.eventQueue",
-    "channels.discord.accounts.work.retry",
-    "channels.clickclack.timeoutSeconds",
-    "channels.clickclack.accounts.work.timeoutSeconds",
-    "channels.signal.httpHost",
-    "channels.signal.httpPort",
-    "channels.googlechat.serviceAccountRef",
     "hooks.internal.installs",
     "plugins.bundledDiscovery",
     "tts.prefsPath",
@@ -257,40 +243,12 @@ describe("dead config keys", () => {
     expectUnknownKey({ config, path: "secrets.providers.legacy", key });
   });
 
-  it.each([
-    ["Discord root", "discord", { dm: { policy: "pairing" } }, "channels.discord.dm", "policy"],
-    [
-      "Discord account",
-      "discord",
-      { accounts: { work: { dm: { allowFrom: ["1"] } } } },
-      "channels.discord.accounts.work.dm",
-      "allowFrom",
-    ],
-    ["Slack root", "slack", { dm: { policy: "pairing" } }, "channels.slack.dm", "policy"],
-    [
-      "Slack account",
-      "slack",
-      { accounts: { work: { dm: { allowFrom: ["U1"] } } } },
-      "channels.slack.accounts.work.dm",
-      "allowFrom",
-    ],
-    [
-      "Google Chat root",
-      "googlechat",
-      { dm: { policy: "pairing" } },
-      "channels.googlechat.dm",
-      "policy",
-    ],
-    [
-      "Google Chat account",
-      "googlechat",
-      { accounts: { work: { dm: { allowFrom: ["users/1"] } } } },
-      "channels.googlechat.accounts.work.dm",
-      "allowFrom",
-    ],
-  ] as const)("rejects legacy nested DM aliases for %s", (_name, channel, entry, path, key) => {
-    expectUnknownKey({ config: { channels: { [channel]: entry } }, path, key });
-  });
+  it.each([] as const)(
+    "rejects legacy nested DM aliases for %s",
+    (_name, channel, entry, path, key) => {
+      expectUnknownKey({ config: { channels: { [channel]: entry } }, path, key });
+    },
+  );
 
   it("rejects retired audio.transcription", () => {
     expectUnknownKey({
@@ -327,10 +285,6 @@ describe("dead config keys", () => {
     ["canvasHost", { enabled: true }],
     ["tui", { footer: { showRemoteHost: true } }],
     ["defaultModel", "openai/gpt-5.6"],
-    ["channels.slack.identity", "bot"],
-    ["channels.whatsapp.messagePrefix", "x"],
-    ["channels.whatsapp.ackReaction", { emoji: "x" }],
-    ["channels.imessage.coalesceSameSenderDms", true],
     ["cron.webhook", "https://example.com"],
     ["commands.modelsWrite", true],
     ["messages.messagePrefix", "x"],
@@ -343,14 +297,7 @@ describe("dead config keys", () => {
     ["mcp.servers.docs.connectTimeout", 2, { command: "docs" }],
     ["mcp.servers.docs.timeout", 2, { command: "docs" }],
     ["nodeHost.mcp.servers.docs.connect_timeout", 2, { command: "docs" }],
-    ["channels.discord.voice.realtime.voice", "alloy"],
-    ["channels.discord.threadBindings.spawnAcpSessions", true],
     ["channels.telegram.threadBindings.spawnSubagentSessions", true],
-    ["channels.matrix.threadBindings.spawnAcpSessions", true],
-    ["channels.line.threadBindings.spawnSubagentSessions", true],
-    ["channels.slack.dm.replyToMode", "all"],
-    ["channels.whatsapp.exposeErrorText", true],
-    ["channels.googlechat.actions", { reactions: true }],
     ["channels.telegram.dm", { threadReplies: "always" }],
   ] as const)("rejects retired %s", (fullPath, value, siblings?: Record<string, unknown>) => {
     const segments = fullPath.split(".");

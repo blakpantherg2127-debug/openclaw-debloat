@@ -124,13 +124,7 @@ const bunCompatibleScopedOwners = new Map([
     "test/vitest/vitest.extension-slack.config.ts",
     {
       dir: "extensions",
-      files: [
-        "extensions/slack/src/monitor/ingress.auth-retry.test.ts",
-        "extensions/slack/src/monitor/ingress.deferred-stop.test.ts",
-        "extensions/slack/src/monitor/ingress.relay.test.ts",
-        "extensions/slack/src/monitor/message-handler.debounce-policy.test.ts",
-        "extensions/slack/src/monitor/provider.transport-credentials.test.ts",
-      ],
+      files: ["extensions/slack/src/monitor/ingress.auth-retry.test.ts"],
     },
   ],
   [

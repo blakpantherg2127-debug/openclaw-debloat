@@ -355,27 +355,6 @@ describe("config schema", () => {
     });
   });
 
-  it("keeps core channel settings discoverable with bundled metadata", () => {
-    const schema = baseSchema;
-    const channels = lookupConfigSchema(schema, "channels");
-    expect(channels?.children.map((child) => child.key)).toEqual(
-      expect.arrayContaining(["defaults", "modelByChannel", "matrix"]),
-    );
-    expect(channels?.children.map((child) => child.key)).not.toContain("*");
-    expect(lookupConfigSchema(schema, "channels.unknownChannel")).toBeNull();
-    expect(lookupConfigSchema(schema, "channels.defaults.groupPolicy")?.schema).toMatchObject({
-      enum: ["open", "disabled", "allowlist"],
-    });
-    expect(
-      lookupConfigSchema(schema, "channels.defaults.botLoopProtection.maxEventsPerWindow")?.schema,
-    ).toMatchObject({ type: "integer" });
-    expect(lookupConfigSchema(schema, "channels.modelByChannel.matrix.room")?.schema).toMatchObject(
-      {
-        type: "string",
-      },
-    );
-  });
-
   it("omits later plugin schemas after the aggregate extension schema budget is exhausted", () => {
     const res = buildConfigSchemaCore({
       cache: false,
@@ -399,18 +378,6 @@ describe("config schema", () => {
     expect(last?.schema?.type).toBe("object");
     expect(last?.schema?.additionalProperties).toBe(true);
     expect(last?.schema?.description).toContain("omitted");
-  });
-
-  it("adds heartbeat target hints with dynamic channels", () => {
-    const res = buildConfigSchemaCore(heartbeatChannelInput);
-
-    const defaultsHint = res.uiHints["agents.defaults.heartbeat.target"];
-    const entryHint = res.uiHints["agents.entries.*.heartbeat.target"];
-    expect(defaultsHint?.help).toContain("imessage");
-    expect(defaultsHint?.help).toContain("owner");
-    expect(defaultsHint?.help).toContain("last");
-    expect(defaultsHint?.placeholder).toBe("owner");
-    expect(entryHint?.help).toContain("imessage");
   });
 
   it("caches merged schemas for identical plugin/channel metadata", () => {

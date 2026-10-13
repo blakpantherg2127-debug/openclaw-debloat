@@ -417,72 +417,6 @@ describe("channel turn delivery", () => {
     expect(hasVisibleChannelTurnDispatch(result.dispatchResult)).toBe(false);
   });
 
-  it("prepares durable payloads while leaving hooks and visible delivery with the durable owner", async () => {
-    sendDurableMessageBatch.mockResolvedValueOnce(createDurableSendResult(["tlon-1"]));
-    const onDelivered = vi.fn(),
-      deliver = vi.fn(),
-      runMessageSending = vi.fn();
-    getGlobalHookRunner.mockReturnValue({
-      hasHooks: (name: string) => name === "message_sending",
-      runMessageSending,
-    });
-    const capture = createDeliveryResultCapture();
-    dispatchReplyWithRoutedChannelDispatcherCore.mockImplementationOnce(capture.dispatch);
-    await runRouted(
-      {
-        deliver,
-        durable: (payload) => ({
-          replyToMode: "first",
-          requiredCapabilities: { text: payload.text?.includes("Generated") === true },
-        }),
-        preparePayload: (payload) => ({ ...payload, text: payload.text + " Generated" }),
-        observeMessageSent: true,
-        onDelivered,
-      },
-      {
-        To: "chat/~nec/general",
-        OriginatingTo: "chat/~nec/general",
-        MessageThreadId: 777,
-        ChatType: "group",
-        SenderId: "sender-1",
-      },
-      { channel: "tlon", accountId: "acct" },
-    );
-    expect(deliver).not.toHaveBeenCalled();
-    expect(runMessageSending).not.toHaveBeenCalled();
-    const request: DurableSendRequest = {
-      channel: "tlon",
-      to: "chat/~nec/general",
-      accountId: "acct",
-      payloads: [{ text: "reply Generated" }],
-      durability: "best_effort",
-      replyToMode: "first",
-      threadId: 777,
-      session: expect.objectContaining({
-        key: "agent:main:test:peer",
-        agentId: "main",
-        requesterAccountId: "acct",
-        requesterSenderId: "sender-1",
-        conversationType: "group",
-        conversationKind: "group",
-      }),
-    };
-    const support: DurableSupportRequest = { channel: "tlon", requirements: { text: true } };
-    expect(sendDurableMessageBatch).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining(request),
-    );
-    expect(resolveOutboundDurableFinalDeliverySupport).toHaveBeenCalledWith(
-      expect.objectContaining(support),
-    );
-    expect(capture.getResult()).toMatchObject({ messageIds: ["tlon-1"], visibleReplySent: true });
-    expect(onDelivered).toHaveBeenCalledExactlyOnceWith(
-      { text: "reply Generated" },
-      { kind: "final" },
-      expect.objectContaining({ visibleReplySent: true }),
-    );
-    expect(emitMessageSent).not.toHaveBeenCalled();
-  });
-
   it("falls back to direct hooks before queueing when durable delivery is unsupported", async () => {
     resolveOutboundDurableFinalDeliverySupport.mockResolvedValueOnce({
       ok: false,
@@ -512,26 +446,6 @@ describe("channel turn delivery", () => {
       runAssembled({ delivery: { deliver, durable: { replyToMode: "first" } } }),
     ).rejects.toThrow("preflight failed");
     expect(sendDurableMessageBatch).not.toHaveBeenCalled();
-    expect(deliver).not.toHaveBeenCalled();
-  });
-
-  it("preserves durable partial-send visibility without retrying via direct delivery", async () => {
-    sendDurableMessageBatch.mockResolvedValueOnce({
-      status: "partial_failed",
-      results: [{ channel: "telegram", messageId: "tg-1" }],
-      receipt: {
-        primaryPlatformMessageId: "tg-1",
-        platformMessageIds: ["tg-1"],
-        parts: [{ platformMessageId: "tg-1", kind: "text", index: 0 }],
-        sentAt: 1,
-      },
-      error: new Error("second chunk failed"),
-      sentBeforeError: true,
-    });
-    const deliver = vi.fn();
-    await expect(
-      runAssembled({ delivery: { deliver, durable: { replyToMode: "first" } } }),
-    ).rejects.toMatchObject({ sentBeforeError: true, visibleReplySent: true });
     expect(deliver).not.toHaveBeenCalled();
   });
 

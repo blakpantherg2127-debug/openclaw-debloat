@@ -95,13 +95,6 @@ describe("docs config examples", () => {
       skipped: undefined,
       issuePath: "",
     },
-    {
-      name: "reports a retired bundled channel key",
-      markdown: '```json5\n{ channels: { slack: { identity: "bot" } } }\n```',
-      findings: 1,
-      skipped: undefined,
-      issuePath: "channels.slack",
-    },
 
     {
       name: "accepts a supported OpenAI plugin config value",

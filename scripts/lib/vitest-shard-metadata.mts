@@ -208,7 +208,6 @@ const STRIPE_FILE_SECONDS_HINTS = new Map<string, number>([
   ["src/commands/models/model-selection.runtime.test.ts", 21.6],
   // Serial file-boundary intervals from run 33364935118, including import/setup.
   // Runtime prerequisites are charged once per batch, separately from test work.
-  ["test/e2e/qa-lab/runtime/gateway-support-export-runtime.test.ts", 6],
   ["test/scripts/plugin-release-git-lifecycle.test.ts", 35],
   ["test/scripts/pr-main-refresh.test.ts", 30],
   ["test/plugin-npm-package-manifest.test.ts", 26],

@@ -226,8 +226,6 @@ function createInstalledPluginIndexForManifests(
 describe("bundled plugin metadata", () => {
   beforeAll(() => {
     listRepoBundledPluginMetadata();
-    collectRepoBundledChannelConfigsForTest("discord");
-    collectRepoBundledChannelConfigsForTest("tlon");
   });
 
   it(
@@ -239,47 +237,6 @@ describe("bundled plugin metadata", () => {
       ).resolves.toMatchObject({ changed: false });
     },
   );
-
-  it("captures setup-entry metadata for bundled channel plugins", () => {
-    const discord = listRepoBundledPluginMetadata().find((entry) => entry.dirName === "discord");
-    expect(discord?.source).toEqual({ source: "./index.ts", built: "index.js" });
-    expect(discord?.setupSource).toEqual({ source: "./setup-entry.ts", built: "setup-entry.js" });
-    expectArtifactPresence(discord?.publicSurfaceArtifacts, {
-      contains: ["api.js", "runtime-api.js", "session-key-api.js"],
-      excludes: ["test-api.js"],
-    });
-    expectArtifactPresence(discord?.runtimeSidecarArtifacts, {
-      contains: ["runtime-api.js"],
-    });
-    expect(discord?.manifest.id).toBe("discord");
-    const discordChannelConfig = collectRepoBundledChannelConfigsForTest("discord")?.discord as
-      | { schema?: { type?: unknown } }
-      | undefined;
-    expect(discordChannelConfig?.schema?.type).toBe("object");
-  });
-
-  it("loads tlon channel config metadata from the lightweight schema surface", () => {
-    const tlonChannelConfig = collectRepoBundledChannelConfigsForTest("tlon")?.tlon as
-      | { schema?: { type?: unknown } }
-      | undefined;
-    expect(tlonChannelConfig?.schema?.type).toBe("object");
-  });
-
-  it("keeps bundled persisted-auth metadata on channel package manifests", () => {
-    const whatsapp = listRepoBundledPluginMetadata().find((entry) => entry.dirName === "whatsapp");
-    expect(whatsapp?.packageManifest?.channel?.persistedAuthState).toEqual({
-      specifier: "./auth-presence",
-      exportName: "hasAnyWhatsAppAuth",
-    });
-
-    const matrix = listRepoBundledPluginMetadata().find((entry) => entry.dirName === "matrix");
-    expect(matrix?.packageManifest?.channel?.persistedAuthState).toEqual({
-      specifier: "./auth-presence",
-      exportName: "hasAnyMatrixAuth",
-      exportNameAsync: "hasAnyMatrixAuthAsync",
-      backingStore: "plugin-state",
-    });
-  });
 
   it("scopes Voice Call CLI activation to the voicecall command", () => {
     const entry = listRepoBundledPluginManifests().find(

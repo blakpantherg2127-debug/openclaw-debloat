@@ -34,40 +34,6 @@ beforeEach(() => {
 });
 
 describe("retained channel config repairs", () => {
-  it("repairs retained channel config before installation without selecting state owners", () => {
-    const rule = { path: ["channels", "discord", "dm", "policy"], message: "retired DM policy" };
-    const config = {
-      channels: { discord: { dm: { enabled: true, policy: "allowlist" } } },
-      plugins: { allow: [] },
-    };
-    retainedConfigDoctorMock.mockReturnValue({
-      legacyConfigRules: [rule],
-      normalizeCompatibilityConfig: ({ cfg }: { cfg: typeof config }) => ({
-        config: { ...cfg, channels: { discord: { dmPolicy: cfg.channels.discord.dm.policy } } },
-        changes: ["moved DM policy"],
-      }),
-      resolveSessionStoreAgentIds: () => {
-        throw new Error("must not select retained state owners");
-      },
-    });
-
-    expect(doctor.listPluginDoctorLegacyConfigRules({ config, env: {} })).toEqual([rule]);
-    expect(doctor.applyPluginDoctorCompatibilityMigrations(config, { env: {} })).toEqual({
-      config: { channels: { discord: { dmPolicy: "allowlist" } }, plugins: { allow: [] } },
-      changes: ["moved DM policy"],
-    });
-    expect(config.channels.discord.dm.policy).toBe("allowlist");
-    expect(retainedConfigDoctorMock).toHaveBeenCalledWith({
-      dirName: "discord",
-      artifactCandidates: ["config-doctor-api.js"],
-      env: {},
-    });
-    retainedConfigDoctorMock.mockClear();
-    expect(doctor.listPluginDoctorSessionStoreAgentIds({ config, env: {} })).toEqual([]);
-    expect(doctor.listPluginDoctorSessionRouteStateOwners({ config, env: {} })).toEqual([]);
-    expect(retainedConfigDoctorMock).not.toHaveBeenCalled();
-  });
-
   it.each([false, true])(
     "never replaces an installed channel owner (configRepair=%s)",
     (configRepair) => {

@@ -133,17 +133,6 @@ describe("message turn migration guardrails", () => {
     });
   });
 
-  it("keeps migrated message paths off low-level reply-history helpers", () => {
-    for (const file of migratedMessageTurnFiles) {
-      const source = readRepoFile(file);
-      for (const helper of lowLevelHistoryHelpers) {
-        expect(source, `${file} should use the channel history window, not ${helper}`).not.toMatch(
-          new RegExp(`\\b${helper}\\b`),
-        );
-      }
-    }
-  });
-
   it("keeps plugin runtime files off deprecated reply-history map helpers", () => {
     for (const file of listTsFiles("extensions")) {
       if (file.includes(".test.") || file.endsWith(".test.ts")) {

@@ -69,11 +69,6 @@ const reviewed = new Map<string, readonly string[]>([
     ["createAccountScopedConversationBindingManager"],
   ],
   [
-    "extensions/imessage/src/conversation-bindings.ts",
-    ["createIMessageConversationBindingManager"],
-  ],
-  ["extensions/matrix/auth-presence.ts", ["hasAnyMatrixAuth"]],
-  [
     "src/agents/harness/native-session/binding-lifecycle.ts",
     ["createNativeSessionBindingLifecycle"],
   ],

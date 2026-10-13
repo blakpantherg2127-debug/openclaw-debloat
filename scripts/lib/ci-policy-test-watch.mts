@@ -150,13 +150,7 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
     testFile,
     watchGlobs: ["extensions/openai/**"],
   })),
-  ...[
-    "extensions/qa-lab/src/ci-smoke-plan.test.ts",
-    "extensions/qa-lab/src/cli.runtime.test.ts",
-    "extensions/qa-lab/src/live-transports/slack/slack-live.runtime.test.ts",
-    "extensions/qa-lab/src/profile-evidence-plan.test.ts",
-    "extensions/qa-lab/src/scenario-retained-final.test.ts",
-  ].map((testFile): PolicyTestWatch => ({
+  ...["extensions/qa-lab/src/ci-smoke-plan.test.ts"].map((testFile): PolicyTestWatch => ({
     testFile,
     watchGlobs: ["qa/scenarios/**"],
   })),
@@ -238,11 +232,7 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
       "extensions/memory-core/src/memory/manager-search.worker.ts",
     ],
   })),
-  ...[
-    "extensions/qa-lab/src/ci-smoke-plan.test.ts",
-    "extensions/qa-lab/src/cli.runtime.test.ts",
-    "extensions/qa-lab/src/profile-evidence-plan.test.ts",
-  ].map((testFile): PolicyTestWatch => ({
+  ...["extensions/qa-lab/src/ci-smoke-plan.test.ts"].map((testFile): PolicyTestWatch => ({
     testFile,
     watchGlobs: ["taxonomy.yaml"],
   })),
@@ -1230,11 +1220,8 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
     testFile,
     watchGlobs: [
       "extensions/buzz/openclaw.plugin.json",
-      "extensions/buzz/src/config-schema.ts",
-      "extensions/buzz/src/target.ts",
       "extensions/codex/openclaw.plugin.json",
       "extensions/synology-chat/openclaw.plugin.json",
-      "extensions/synology-chat/src/config-schema.ts",
       "extensions/telegram/openclaw.plugin.json",
       "extensions/telegram/src/command-config.ts",
       "extensions/telegram/src/config-schema.ts",
@@ -1451,11 +1438,7 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
   },
   {
     testFile: "extensions/matrix/doctor-contract-api.account-state.test.ts",
-    watchGlobs: [
-      "extensions/matrix/doctor-contract-api.ts",
-      "extensions/matrix/src/matrix/account-state-schema-doctor.ts",
-      "extensions/matrix/src/matrix/state-layout-walk.ts",
-    ],
+    watchGlobs: ["extensions/matrix/doctor-contract-api.ts"],
   },
   ...[
     "extensions/memory-core/src/memory/index.test.ts",

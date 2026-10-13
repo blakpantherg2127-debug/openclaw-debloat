@@ -115,10 +115,6 @@
       "destination": "/concepts/qa-e2e-automation#matrix-live-lane"
     },
     {
-      "source": "/plugins/reference/qa-matrix",
-      "destination": "/plugins/reference/qa-lab"
-    },
-    {
       "source": "/plugins/reference/fish-audio",
       "destination": "/plugins/reference/fish-audio-speech"
     },
@@ -327,14 +323,6 @@
       "destination": "/providers/qianfan"
     },
     {
-      "source": "/mattermost",
-      "destination": "/channels/mattermost"
-    },
-    {
-      "source": "/line",
-      "destination": "/channels/line"
-    },
-    {
       "source": "/glm",
       "destination": "/providers/zai"
     },
@@ -351,44 +339,12 @@
       "destination": "/cli/message"
     },
     {
-      "source": "/providers/discord",
-      "destination": "/channels/discord"
-    },
-    {
-      "source": "/providers/googlechat",
-      "destination": "/channels/googlechat"
-    },
-    {
       "source": "/providers/grammy",
       "destination": "/channels/telegram"
     },
     {
-      "source": "/providers/imessage",
-      "destination": "/channels/imessage"
-    },
-    {
       "source": "/providers/location",
       "destination": "/channels/location"
-    },
-    {
-      "source": "/providers/mattermost",
-      "destination": "/channels/mattermost"
-    },
-    {
-      "source": "/providers/msteams",
-      "destination": "/channels/msteams"
-    },
-    {
-      "source": "/providers/line",
-      "destination": "/channels/line"
-    },
-    {
-      "source": "/providers/signal",
-      "destination": "/channels/signal"
-    },
-    {
-      "source": "/providers/slack",
-      "destination": "/channels/slack"
     },
     {
       "source": "/providers/telegram",
@@ -399,16 +355,8 @@
       "destination": "/channels/troubleshooting"
     },
     {
-      "source": "/providers/zalo",
-      "destination": "/channels/zalo"
-    },
-    {
       "source": "/channels/openclaw-zaloclawbot",
       "destination": "/channels/zaloclawbot"
-    },
-    {
-      "source": "/providers/whatsapp",
-      "destination": "/channels/whatsapp"
     },
     {
       "source": "/sandbox",
@@ -515,18 +463,6 @@
       "destination": "/channels/pairing"
     },
     {
-      "source": "/clawdhub",
-      "destination": "/clawhub"
-    },
-    {
-      "source": "/tools/clawhub",
-      "destination": "/clawhub"
-    },
-    {
-      "source": "/tools/clawdhub",
-      "destination": "/clawhub"
-    },
-    {
       "source": "/configuration",
       "destination": "/gateway/configuration"
     },
@@ -549,10 +485,6 @@
     {
       "source": "/device-models",
       "destination": "/reference/device-models"
-    },
-    {
-      "source": "/discord",
-      "destination": "/channels/discord"
     },
     {
       "source": "/discovery",
@@ -637,10 +569,6 @@
     {
       "source": "/images",
       "destination": "/nodes/images"
-    },
-    {
-      "source": "/imessage",
-      "destination": "/channels/imessage"
     },
     {
       "source": "/ios",
@@ -843,10 +771,6 @@
       "destination": "https://openclaw.ai/showcase"
     },
     {
-      "source": "/signal",
-      "destination": "/channels/signal"
-    },
-    {
       "source": "/skills",
       "destination": "/tools/skills"
     },
@@ -889,10 +813,6 @@
     {
       "source": "/skills-config",
       "destination": "/tools/skills-config"
-    },
-    {
-      "source": "/slack",
-      "destination": "/channels/slack"
     },
     {
       "source": "/slash-commands",
@@ -989,10 +909,6 @@
     {
       "source": "/webhook",
       "destination": "/automation/cron-jobs#webhooks"
-    },
-    {
-      "source": "/whatsapp",
-      "destination": "/channels/whatsapp"
     },
     {
       "source": "/windows",
@@ -1494,33 +1410,12 @@
                   {
                     "group": "Discord",
                     "pages": [
-                      "channels/discord",
-                      "channels/discord/setup",
-                      "channels/discord/access-control",
-                      "channels/discord/messaging",
-                      "channels/discord/threads-and-sessions",
-                      "channels/discord/rich-messages",
-                      "channels/discord/events",
-                      "channels/discord/voice-channels",
-                      "channels/discord/voice-transcripts",
-                      "channels/discord/voice-follow",
-                      "channels/discord/troubleshooting",
                       "channels/discord-activities"
                     ]
                   },
-                  "channels/googlechat",
                   {
                     "group": "iMessage",
                     "pages": [
-                      "channels/imessage",
-                      "channels/imessage/setup",
-                      "channels/imessage/private-api",
-                      "channels/imessage/access-control",
-                      "channels/imessage/deployment",
-                      "channels/imessage/media",
-                      "channels/imessage/rich-messages",
-                      "channels/imessage/messaging",
-                      "channels/imessage/troubleshooting",
                       "channels/imessage-from-bluebubbles",
                       "announcements/bluebubbles-imessage"
                     ]
@@ -1528,52 +1423,11 @@
                   {
                     "group": "Matrix",
                     "pages": [
-                      "channels/matrix",
-                      "channels/matrix/setup",
-                      "channels/matrix/access-control",
-                      "channels/matrix/messaging",
-                      "channels/matrix/rich-messages",
-                      "channels/matrix/encryption",
-                      "channels/matrix/threads-and-sessions",
-                      "channels/matrix/accounts-and-homeservers",
                       "channels/matrix-migration",
                       "channels/matrix-presentation",
                       "channels/matrix-push-rules"
                     ]
                   },
-                  {
-                    "group": "Microsoft Teams",
-                    "pages": [
-                      "channels/msteams",
-                      "channels/msteams/setup",
-                      "channels/msteams/access-control",
-                      "channels/msteams/authentication",
-                      "channels/msteams/manifest-and-permissions",
-                      "channels/msteams/configuration",
-                      "channels/msteams/messaging",
-                      "channels/msteams/cards-and-actions",
-                      "channels/msteams/troubleshooting"
-                    ]
-                  },
-                  "channels/signal",
-                  {
-                    "group": "Slack",
-                    "pages": [
-                      "channels/slack",
-                      "channels/slack/setup",
-                      "channels/slack/transports",
-                      "channels/slack/enterprise-grid",
-                      "channels/slack/manifest-and-scopes",
-                      "channels/slack/access-control",
-                      "channels/slack/threads-and-sessions",
-                      "channels/slack/messaging",
-                      "channels/slack/media",
-                      "channels/slack/rich-messages",
-                      "channels/slack/events",
-                      "channels/slack/troubleshooting"
-                    ]
-                  },
-                  "channels/sms",
                   {
                     "group": "Telegram",
                     "pages": [
@@ -1589,52 +1443,17 @@
                       "channels/telegram/mini-app",
                       "channels/telegram/troubleshooting"
                     ]
-                  },
-                  "channels/whatsapp",
-                  "channels/x"
-                ]
-              },
-              {
-                "group": "Developer and self-hosted",
-                "pages": [
-                  "channels/a2a",
-                  "channels/buzz",
-                  "channels/clickclack",
-                  "channels/irc",
-                  "channels/mattermost",
-                  "channels/nextcloud-talk",
-                  "channels/nostr",
-                  "channels/raft",
-                  "channels/reef",
-                  "channels/synology-chat",
-                  "channels/tlon",
-                  "channels/twitch"
+                  }
                 ]
               },
               {
                 "group": "Regional platforms",
                 "pages": [
-                  {
-                    "group": "Feishu",
-                    "pages": [
-                      "channels/feishu",
-                      "channels/feishu/setup",
-                      "channels/feishu/access-control",
-                      "channels/feishu/advanced-configuration",
-                      "channels/feishu/dynamic-agents",
-                      "channels/feishu/messaging",
-                      "channels/feishu/configuration-reference",
-                      "channels/feishu/troubleshooting"
-                    ]
-                  },
-                  "channels/line",
                   "channels/qqbot",
                   "channels/wechat",
                   "channels/wecom",
                   "channels/yuanbao",
-                  "channels/zalo",
-                  "channels/zaloclawbot",
-                  "channels/zalouser"
+                  "channels/zaloclawbot"
                 ]
               },
               {
@@ -1857,8 +1676,7 @@
                       "plugins/mcp-relay",
                       "plugins/oc-path",
                       "plugins/session-share",
-                      "plugins/workboard",
-                      "plugins/zalouser"
+                      "plugins/workboard"
                     ]
                   }
                 ]
@@ -2124,40 +1942,6 @@
                   },
                   "tools/acp-agents-setup",
                   "tools/multi-agent-sandbox-tools"
-                ]
-              }
-            ]
-          },
-          {
-            "tab": "ClawHub",
-            "groups": [
-              {
-                "group": "Overview",
-                "pages": [
-                  "clawhub/index",
-                  "clawhub/quickstart",
-                  "clawhub/how-it-works"
-                ]
-              },
-              {
-                "group": "Using ClawHub",
-                "pages": [
-                  "clawhub/cli",
-                  "clawhub/publishing",
-                  "clawhub/skill-format",
-                  "clawhub/auth",
-                  "clawhub/telemetry",
-                  "clawhub/troubleshooting"
-                ]
-              },
-              {
-                "group": "API and trust",
-                "pages": [
-                  "clawhub/api",
-                  "clawhub/http-api",
-                  "clawhub/acceptable-usage",
-                  "clawhub/moderation",
-                  "clawhub/security-audits"
                 ]
               }
             ]

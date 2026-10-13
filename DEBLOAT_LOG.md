@@ -89,3 +89,51 @@ false` (needs the denied Active Memory plugin), `skills.allowBundled` (7 usable 
   key could settle (memory provider, Active Memory recall, relay legacy auth, gateway auth,
   auto-enabled entries) is now set in the profile.
 - Next: baseline typecheck/tests, then Phase 2 group 1 (channels).
+
+### 1.2 Baseline tests (and why the test plan changed)
+
+- A full `pnpm test` projects to ~5 h on this 4 vCPU host (954 of ~19,600 files in 15 min), so
+  per-group proof uses a bounded "core set" (`src/plugins src/channels src/config src/cron
+src/commands/doctor src/agents/tools` plus the keep plugins' tests), the plan's "affected area +
+  core gateway and agent tests"; gateway behavior is proven per group by booting an isolated
+  Gateway (below). A first attempt that also included all of `src/gateway` and `src/agents` hit
+  the 2 h tool limit after ~1,300 files.
+- Pre-existing failures on untouched `main` (same files run in a clean baseline worktree):
+  `extensions/browser/src/browser/{bridge-server.auth,cdp-proxy-bypass,chrome-mcp-connect,chrome-mcp.cleanup}.test.ts`,
+  `src/agents/tools/web-search-provider-common.test.ts`, `src/commands/doctor/shared/xai-auto-retirement.test.ts`,
+  `src/config/io.eacces.test.ts` (runs as root), `src/config/sessions/session-accessor.sqlite-reclamation-reuse.test.ts`,
+  `src/plugins/bundled-plugin-icons.test.ts`, `src/plugins/memory-background-reload.test.ts`, plus
+  `src/infra/loopback-connect.test.ts` (IPv6) and 10 gateway worker-environment/portal tests from the
+  partial gateway run. These are not counted as regressions.
+- Typecheck (`pnpm tsgo:all`) baseline: pass, 67 min cold; incremental reruns take 15-20 min.
+
+### 2.1 Group 1: channels (removed)
+
+- Removed 26 channel plugins (a2a, buzz, clickclack, discord, feishu, googlechat, imessage, irc,
+  line, matrix, mattermost, msteams, nextcloud-talk, nostr, raft, reef, signal, slack, sms,
+  synology-chat, tlon, twitch, whatsapp, x, zalo, zalouser) plus `extensions/qa-lab` and
+  `test/e2e/qa-lab`. QA Lab is source-only maintainer tooling whose live transports import the
+  Discord/Slack/Matrix/WhatsApp plugins; keeping it would have blocked the channel removal.
+  `qa-channel` (synthetic test channel used by core tests) is kept.
+- The script also: deleted 82 tests/maintainer scripts that import removed code (QA runners,
+  code-mode model matrix, live-channel probes); trimmed worker-entrypoint registries in
+  `scripts/lib` and `test/vitest`; dropped the now-unused `matrix-js-sdk` patch; regenerated channel
+  config metadata, config schema/doc baselines, plugin inventory and runtime sidecar lists; pruned
+  60 docs pages and their `docs/docs.json` nav entries. The official external channel catalog is
+  deliberately not regenerated so `openclaw plugins install @openclaw/<id>` can still re-add them.
+- Core-set failures caused by the removal were tests that load the removed channels by id, assert
+  their generated metadata, or read their source files. The script removes exactly those: 7 whole
+  files and ~45 cases/table rows (listed in the group's `testFiles`/`testCases`/`testRows`). After
+  that the 37 affected files pass (980 tests, 0 failures).
+- Verification: `pnpm tsgo:all` pass; `pnpm build` pass; core set: only pre-existing failures
+  (plus `src/cron/store/run-receipt-store.test.ts`, which failed once and passed on rerun: flaky).
+  Isolated Gateway with the lean profile: loads anthropic, browser, duckduckgo, memory-core,
+  telegram; tool catalog has read/write/edit/exec, browser, automations (cron), memory_search/get,
+  web_search/web_fetch, create_goal; doctor has no errors (only the placeholder Telegram 401).
+- Size change: extensions 167 -> 140, workspace projects 191 -> 164, lockfile 19,915 -> 18,155
+  lines (4,023 -> 3,727 package entries), packed tarball 75.0 -> 74.0 MB (224.9 -> 221.3 MB
+  unpacked; channels mostly shipped as external packages already), dist 442 -> 426 MB,
+  Gateway idle RSS (lean) 1,951 -> 1,729 MB.
+- Process note: two jobs were killed by the tool's 2 h limit and running the build alongside tests
+  tripled its time; long jobs now run detached, one at a time.
+- Next: group 2 (providers).

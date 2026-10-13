@@ -900,25 +900,6 @@ describe("config plugin validation", () => {
     expectNoPath(res.warnings, "channels.telegarm");
   });
 
-  it("warns when plugins.allow contains a channel id without a plugin manifest (#76872)", () => {
-    const res = validateWithRegistry(
-      {
-        agents: { entries: { openclaw: {} } },
-        channels: { discord: { token: "xxx" } },
-        plugins: { allow: ["discord"] },
-      },
-      [{ level: "info", message: "explicit plugin source selected" }],
-    );
-    expect(res.ok).toBe(true);
-    expect(res.warnings ?? []).toEqual([
-      {
-        path: "plugins.allow",
-        message:
-          "plugin not installed: discord — install the official external plugin with: openclaw plugins install @openclaw/discord",
-      },
-    ]);
-  });
-
   it("uses persisted installed-plugin records as stale channel evidence", async () => {
     const stateDir = path.join(suiteHome, ".openclaw");
     clearLoadInstalledPluginIndexInstallRecordsCache();
@@ -1181,13 +1162,6 @@ describe("config plugin validation", () => {
     const res = validateInSuite({
       agents: { defaults: { heartbeat: { target: "chat" } }, entries: { openclaw: {} } },
       plugins: { enabled: false, load: { paths: [chatPluginDir] } },
-    });
-    expect(res.ok).toBe(true);
-  });
-
-  it("accepts bundled channel aliases for heartbeat targets", () => {
-    const res = validateInSuite({
-      agents: { defaults: { heartbeat: { target: "gchat" } }, entries: { pi: {} } },
     });
     expect(res.ok).toBe(true);
   });

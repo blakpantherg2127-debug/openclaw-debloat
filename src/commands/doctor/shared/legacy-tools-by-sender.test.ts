@@ -44,9 +44,6 @@ describe("Doctor sender tool policy migration", () => {
   it.each([
     "tools.toolsBySender",
     "agents.entries.main.tools.toolsBySender",
-    "channels.slack.accounts.work.channels.general.toolsBySender",
-    "channels.discord.guilds.guild.channels.general.toolsBySender",
-    "channels.msteams.teams.team.channels.general.toolsBySender",
     "channels.telegram.direct.user.toolsBySender",
   ])("migrates the declared policy scope %s", (location) => {
     const raw: Record<string, unknown> = {};
@@ -97,102 +94,5 @@ describe("Doctor sender tool policy migration", () => {
         sourceConfigBeforeMigrations: migrated.sourceConfig,
       }).changes,
     ).toEqual([]);
-  });
-
-  it.each([
-    {
-      name: "legacy before typed",
-      policies: { " @Alice ": { deny: ["exec"] }, "ID: ALICE": { allow: ["exec"] } },
-      expectedKey: "id:Alice",
-      senderId: "@ALICE",
-    },
-    {
-      name: "typed before legacy",
-      policies: { "ID: ALICE": { deny: ["exec"] }, " @Alice ": { allow: ["exec"] } },
-      expectedKey: "ID: ALICE",
-      senderId: "@ALICE",
-    },
-    {
-      name: "normalized legacy collision",
-      policies: { " @Alice ": { deny: ["exec"] }, ALICE: { allow: ["exec"] } },
-      expectedKey: "id:Alice",
-      senderId: "@ALICE",
-    },
-  ])("preserves the first effective policy for $name", ({ policies, expectedKey, senderId }) => {
-    const raw = {
-      channels: { whatsapp: { groups: { "123@g.us": { toolsBySender: policies } } } },
-    };
-    const original = structuredClone(raw);
-    expect(validateConfigObjectRaw(raw)).toMatchObject({
-      ok: false,
-      issues: expect.arrayContaining([
-        expect.objectContaining({ message: expect.stringContaining("openclaw doctor --fix") }),
-      ]),
-    });
-    expect(findLegacyConfigIssues(raw)).toContainEqual(
-      expect.objectContaining({ message: expect.stringContaining("Untyped toolsBySender") }),
-    );
-
-    const migrated = migrateLegacyConfig(raw, { sourceConfigBeforeMigrations: raw });
-    expect(migrated.partiallyValid).toBeUndefined();
-    const toolsBySender =
-      migrated.sourceConfig?.channels?.whatsapp?.groups?.["123@g.us"]?.toolsBySender;
-    expect(toolsBySender).toEqual({ [expectedKey]: { deny: ["exec"] } });
-    expect(resolveToolsBySender({ toolsBySender, senderId })).toEqual({ deny: ["exec"] });
-    expect(migrated.changes).toContainEqual(expect.stringContaining("first matching policy"));
-    expect(raw).toEqual(original);
-    expect(findLegacyConfigIssues(migrated.sourceConfig)).toEqual([]);
-    expect(
-      migrateLegacyConfig(migrated.sourceConfig, {
-        sourceConfigBeforeMigrations: migrated.sourceConfig,
-      }).changes,
-    ).toEqual([]);
-  });
-
-  it("migrates nested account policies without changing typed matching or colon IDs", () => {
-    const raw = {
-      channels: {
-        whatsapp: {
-          accounts: {
-            work: {
-              groups: {
-                "123@g.us": {
-                  toolsBySender: {
-                    "@alice:example.invalid": { deny: ["exec"] },
-                    "id:@alice:example.invalid": { deny: ["write"] },
-                    "discord:user:alice": { allow: ["read"] },
-                    "channel:discord:user:alice": { deny: ["read"] },
-                    "username:alice": { allow: ["exec"] },
-                    "*": { deny: ["write", "exec"] },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    };
-    const migrated = migrateLegacyConfig(raw, { sourceConfigBeforeMigrations: raw });
-    expect(migrated.partiallyValid).toBeUndefined();
-    const toolsBySender =
-      migrated.sourceConfig?.channels?.whatsapp?.accounts?.work?.groups?.["123@g.us"]
-        ?.toolsBySender;
-    expect(toolsBySender).toEqual({
-      "id:alice:example.invalid": { deny: ["exec"] },
-      "id:@alice:example.invalid": { deny: ["write"] },
-      "id:discord:user:alice": { allow: ["read"] },
-      "channel:discord:user:alice": { deny: ["read"] },
-      "username:alice": { allow: ["exec"] },
-      "*": { deny: ["write", "exec"] },
-    });
-    for (const [sender, policy] of [
-      [{ senderId: "@alice:example.invalid" }, { deny: ["write"] }],
-      [{ senderId: "alice:example.invalid" }, { deny: ["exec"] }],
-      [{ senderId: "discord:user:alice", messageProvider: "slack" }, { allow: ["read"] }],
-      [{ senderId: "user:alice", messageProvider: "discord" }, { deny: ["read"] }],
-      [{ senderId: "other", senderName: "alice:example.invalid" }, { deny: ["write", "exec"] }],
-    ] as const) {
-      expect(resolveToolsBySender({ toolsBySender, ...sender })).toEqual(policy);
-    }
   });
 });

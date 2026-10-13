@@ -111,13 +111,6 @@ describe("sessions", () => {
 
   const resolveSessionKeyCases = [
     {
-      name: "keeps explicit provider when provided in group key",
-      scope: "per-sender" as const,
-      ctx: { From: "discord:group:12345", ChatType: "group" },
-      mainKey: "main",
-      expected: "agent:main:discord:group:12345",
-    },
-    {
       name: "uses custom main key when provided",
       scope: "per-sender" as const,
       ctx: { From: "+1555" },

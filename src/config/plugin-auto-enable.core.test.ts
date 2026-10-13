@@ -247,39 +247,6 @@ describe("applyPluginAutoEnable core", () => {
     expect(result.autoEnabledReasons).toStrictEqual({});
   });
 
-  it("auto-enables built-in channels and preserves them in restrictive plugins.allow", () => {
-    const result = applyPluginAutoEnable({
-      config: {
-        channels: { slack: { botToken: "x" } },
-        plugins: { allow: ["telegram"] },
-      },
-      env,
-    });
-
-    expect(result.config.channels?.slack?.enabled).toBe(true);
-    expect(result.config.plugins?.entries?.slack).toBeUndefined();
-    expect(result.config.plugins?.allow).toEqual(["telegram", "slack"]);
-    expect(result.autoEnabledReasons).toEqual({
-      slack: ["slack configured"],
-    });
-    expect(Object.getPrototypeOf(result.autoEnabledReasons)).toBeNull();
-    expect(result.changes.join("\n")).toContain("Slack configured, enabled automatically.");
-  });
-
-  it("preserves an empty plugins.allow as nonrestrictive during auto-enable", () => {
-    const result = applyPluginAutoEnable({
-      config: {
-        channels: { slack: { botToken: "x" } },
-        plugins: { allow: [] },
-      },
-      env,
-    });
-
-    expect(result.config.channels?.slack?.enabled).toBe(true);
-    expect(result.config.plugins?.allow).toEqual([]);
-    expect(result.changes.join("\n")).toContain("Slack configured, enabled automatically.");
-  });
-
   it.each<OpenClawConfig>([{ browser: { enabled: false } }, { tools: { allow: ["browser"] } }])(
     "does not load disabled browser plugin manifests with setup input %j",
     (setup) => {

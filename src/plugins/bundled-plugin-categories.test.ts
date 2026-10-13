@@ -47,12 +47,6 @@ describe("bundled plugin categories", () => {
     { pluginId: "beam", category: "developer-tools", purpose: "coding-session review" },
     { pluginId: "anthropic", category: "models", purpose: "model access despite a CLI backend" },
     { pluginId: "opencode", category: "models", purpose: "model access despite session tools" },
-    { pluginId: "a2a", category: "agent-orchestration", purpose: "agent-to-agent delegation" },
-    {
-      pluginId: "feishu",
-      category: "channels",
-      purpose: "human-agent messaging despite workspace tools",
-    },
     { pluginId: "document-extract", category: "documents-files", purpose: "document extraction" },
     { pluginId: "google-meet", category: "voice", purpose: "live spoken participation" },
     { pluginId: "tokenjuice", category: "context", purpose: "active-context compaction" },

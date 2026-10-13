@@ -1703,55 +1703,6 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
     ]);
   });
 
-  it("evaluates the trusted installed Slack owner's credential contract", () => {
-    listPotentialConfiguredChannelPresenceSignals.mockReturnValue([
-      { channelId: "slack", source: "env" },
-    ]);
-    const slackRoot = fileURLToPath(new URL("../../extensions/slack/", import.meta.url));
-    const record = {
-      ...withManifestLoadPaths({
-        id: "slack",
-        origin: "global",
-        channels: ["slack"],
-        packageChannel: {
-          id: "slack",
-          configuredState: {
-            env: { anyOf: ["SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"] },
-            specifier: "./configured-state",
-            exportName: "hasConfiguredSlackChannelState",
-          },
-        },
-      }),
-      rootDir: slackRoot,
-    } satisfies PluginManifestRecord;
-    const config = { plugins: { allow: ["slack"] } } as OpenClawConfig;
-
-    expect(
-      resolveConfiguredChannelPresencePolicy({
-        config,
-        env: { SLACK_BOT_TOKEN: "xoxb-test" },
-        manifestRecords: [record],
-        includePersistedAuthState: false,
-      }),
-    ).toStrictEqual([]);
-    expect(
-      resolveConfiguredChannelPresencePolicy({
-        config,
-        env: { SLACK_BOT_TOKEN: "xoxb-test", SLACK_APP_TOKEN: "xapp-test" },
-        manifestRecords: [record],
-        includePersistedAuthState: false,
-      }),
-    ).toStrictEqual([
-      {
-        channelId: "slack",
-        sources: ["env", "manifest-env"],
-        effective: true,
-        pluginIds: ["slack"],
-        blockedReasons: [],
-      },
-    ]);
-  });
-
   it("lists explicit configured channels without ambient env triggers", () => {
     expect(
       listExplicitConfiguredChannelIdsForConfig({

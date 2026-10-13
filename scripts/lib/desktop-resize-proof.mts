@@ -46,9 +46,6 @@ const failureSourceFiles = [
   "ui/src/e2e/control-ui-e2e-suite.test-support.ts",
   "ui/src/test-helpers/control-ui-e2e.ts",
   "ui/src/test-helpers/control-ui-e2e-readiness.ts",
-  "test/e2e/qa-lab/runtime/skill-library-node-process.ts",
-  "test/e2e/qa-lab/runtime/skill-library-wire-fixture.ts",
-  "test/e2e/qa-lab/runtime/cloud-worker-midturn-loss-fixture.ts",
   "test/helpers/openclaw-test-instance.ts",
 ];
 

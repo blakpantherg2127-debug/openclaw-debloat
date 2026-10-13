@@ -684,42 +684,6 @@ describe("registerPluginCommand", () => {
     expect(listProviderPluginCommandSpecs("discord")).toStrictEqual([]);
   });
 
-  it("requires config before using read-only manifest command defaults", () => {
-    setActivePluginRegistry(createTestRegistry([]));
-    registerVoiceCommandForTest({
-      nativeNames: {
-        discord: "discordvoice",
-      },
-      description: "Demo command",
-    });
-    const env = {
-      ...process.env,
-      OPENCLAW_BUNDLED_PLUGINS_DIR: path.resolve("extensions"),
-    };
-
-    expect(getPluginCommandSpecs("discord", { env })).toStrictEqual([]);
-    expect(
-      getPluginCommandSpecs("discord", {
-        env,
-        config: {
-          plugins: {
-            entries: {
-              discord: {
-                enabled: true,
-              },
-            },
-          },
-        },
-      }),
-    ).toEqual([
-      {
-        name: "discordvoice",
-        description: "Demo command",
-        acceptsArgs: false,
-      },
-    ]);
-  });
-
   it("exposes native description localizations on plugin command specs", () => {
     const result = registerVoiceCommandForTest({
       description: "Demo command",

@@ -233,11 +233,6 @@ describe("bundled channel entry shape guards", () => {
     expect(bundled.listBundledChannelSetupPlugins()).toStrictEqual([]);
   });
 
-  it("loads real bundled channel entry contracts from the source tree", async () => {
-    expect(realBundledSourceTreeProbe.pluginIds).toEqual(["slack"]);
-    expect(realBundledSourceTreeProbe.hasAccountInspector).toBe(true);
-  });
-
   it("fills sparse bundled channel plugin metadata from package metadata", async () => {
     const tempRoot = makeBundledEsmFixtureRoot("openclaw-bundled-metadata-");
     const previousBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;

@@ -35,11 +35,6 @@ describe("channel registry helpers", () => {
     ]);
   }
 
-  it("keeps Feishu first in the current default order", () => {
-    const channels = listChatChannels();
-    expect(channels[0]?.id).toBe("feishu");
-  });
-
   it("formats Telegram selection lines without a docs prefix and with website extras", () => {
     const telegram = listChatChannels().find((channel) => channel.id === "telegram");
     if (!telegram) {
