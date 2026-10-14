@@ -238,15 +238,6 @@ describe("bundled plugin metadata", () => {
     },
   );
 
-  it("scopes Voice Call CLI activation to the voicecall command", () => {
-    const entry = listRepoBundledPluginManifests().find(
-      ({ manifest }) => manifest.id === "voice-call",
-    );
-
-    expect(entry?.manifest.commandAliases).toStrictEqual([{ name: "voicecall" }]);
-    expect(entry?.manifest.activation?.onCommands).toStrictEqual(["voicecall"]);
-  });
-
   it("keeps Workboard CLI ownership separate from its slash command", () => {
     const entry = listRepoBundledPluginManifests().find(
       ({ manifest }) => manifest.id === "workboard",

@@ -171,3 +171,27 @@ src/commands/doctor src/agents/tools` plus the keep plugins' tests), the plan's 
   maintainer tooling tests that need a full git clone / Git 2.45). Also noted: removing QA Lab
   dropped its e2e tests for exec approvals, sandboxed exec and gateway authz.
 - Next: group 3 (media, speech, meetings) together with examples.
+
+### 2.3 Group 3: media, speech, meetings, examples (removed)
+
+- Removed 24 plugins: speech/STT/TTS (azure-speech, deepgram, elevenlabs, fish-audio-speech,
+  gradium, inworld, microsoft, senseaudio, tts-local-cli), talk-voice, voice-call; meetings
+  (facetime, google-meet, slack-huddles, teams-meetings, zoom-meetings); image/music/video
+  generation (alibaba, comfy, fal, kie, pixverse, runway, vydra, image-generation-core) and the two
+  root live tests for music/video providers. Examples group: `examples/ai-chat`,
+  `custodian-skills/add-model-provider`, `custodian-skills/cloud-image-bake` (kept:
+  `configure-channel`, `diagnose-gateway`, which help set up Telegram and debug the Gateway).
+- No keep plugin (or the 4 kept providers) references these. Core media code (`src/tts`,
+  `src/talk`, `src/*-generation`) stays; see group 6 below for the core-source attempts.
+- Test pruning: 1 whole file (Voice Call setup migration), 3 cases, 1 table row. The
+  `doc-baseline` case also checked core/channel entries; it is removed whole because it pins
+  Voice Call's Twilio keys.
+- Verification: `pnpm tsgo:all` pass (13 min incremental); `pnpm build` pass (51 min); core set:
+  only pre-existing failures plus the known flaky cron receipt test; the 5 edited files pass.
+  Isolated Gateway (lean profile): same 5 plugins, same 67-tool catalog with all keep tools,
+  doctor has no errors, idle RSS 1,714 MB.
+- Sizes: extensions 88 -> 64, lockfile 17,692 -> 17,505 lines, workspace projects 112 -> 88.
+  `dist`/pack numbers in a reused checkout are not comparable (test runs write worker bundles
+  into `dist/worker` and rebuilds keep old hashed Control UI assets); Phase 3 measures from a
+  clean build.
+- Next: group 4 (apps/ and node plugins).

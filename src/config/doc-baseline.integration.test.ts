@@ -74,22 +74,6 @@ describe("config doc baseline integration", () => {
     expect(second.json.plugin).toBe(first.json.plugin);
   }, 240_000);
 
-  it("includes core, channel, and plugin config metadata", async () => {
-    const byPath = await getSharedByPath();
-
-    const gatewayToken = requireEntry(byPath, "gateway.auth.token");
-    expect(gatewayToken.kind).toBe("core");
-    expect(gatewayToken.sensitive).toBe(true);
-
-    const telegramToken = requireEntry(byPath, "channels.telegram.botToken");
-    expect(telegramToken.kind).toBe("channel");
-    expect(telegramToken.sensitive).toBe(true);
-
-    const twilioToken = requireEntry(byPath, "plugins.entries.voice-call.config.twilio.authToken");
-    expect(twilioToken.kind).toBe("plugin");
-    expect(twilioToken.sensitive).toBe(true);
-  });
-
   it("preserves authored help and security metadata without inferred tags", async () => {
     const byPath = await getSharedByPath();
     const tokenEntry = byPath.get("gateway.auth.token");

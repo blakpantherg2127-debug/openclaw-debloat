@@ -622,12 +622,6 @@ importers:
         specifier: 0.1.9
         version: 0.1.9
 
-  examples/ai-chat:
-    dependencies:
-      '@openclaw/ai':
-        specifier: workspace:*
-        version: link:../../packages/ai
-
   extensions/acpx:
     dependencies:
       '@agentclientprotocol/claude-agent-acp':
@@ -672,12 +666,6 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
-  extensions/alibaba:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
   extensions/amazon-bedrock:
     dependencies:
       '@aws-sdk/client-bedrock':
@@ -701,12 +689,6 @@ importers:
         version: link:../../packages/plugin-sdk
 
   extensions/anthropic:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
-  extensions/azure-speech:
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -844,12 +826,6 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
-  extensions/comfy:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
   extensions/copilot:
     dependencies:
       '@github/copilot-sdk':
@@ -880,12 +856,6 @@ importers:
       zod:
         specifier: 4.6.5
         version: 4.6.5
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
-  extensions/deepgram:
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -990,32 +960,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
-  extensions/elevenlabs:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
   extensions/exa:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
-  extensions/facetime:
-    dependencies:
-      typebox:
-        specifier: 1.3.35
-        version: 1.3.35
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
-  extensions/fal:
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -1042,12 +987,6 @@ importers:
       typebox:
         specifier: 1.3.35
         version: 1.3.35
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
-  extensions/fish-audio-speech:
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -1085,34 +1024,6 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
-  extensions/google-meet:
-    dependencies:
-      jszip:
-        specifier: 3.10.2
-        version: 3.10.2
-      typebox:
-        specifier: 1.3.35
-        version: 1.3.35
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
-  extensions/gradium:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
-  extensions/image-generation-core:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
   extensions/imap:
     dependencies:
       imapflow:
@@ -1131,18 +1042,6 @@ importers:
       '@types/mailparser':
         specifier: 3.9.0
         version: 3.9.0
-
-  extensions/inworld:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
-  extensions/kie:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
 
   extensions/linux-node:
     dependencies:
@@ -1279,16 +1178,6 @@ importers:
       openclaw:
         specifier: workspace:*
         version: link:../..
-
-  extensions/microsoft:
-    dependencies:
-      node-edge-tts:
-        specifier: 1.2.10
-        version: 1.2.10(supports-color@10.2.2)
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
 
   extensions/migrate-claude:
     dependencies:
@@ -1433,15 +1322,6 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
-  extensions/pixverse:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
   extensions/policy:
     dependencies:
       json5:
@@ -1471,19 +1351,7 @@ importers:
         specifier: workspace:*
         version: link:../..
 
-  extensions/runway:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
   extensions/searxng:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
-  extensions/senseaudio:
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -1494,15 +1362,6 @@ importers:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-
-  extensions/slack-huddles:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
 
   extensions/tavily:
     dependencies:
@@ -1519,15 +1378,6 @@ importers:
       zod:
         specifier: 4.6.5
         version: 4.6.5
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
-  extensions/teams-meetings:
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -1577,12 +1427,6 @@ importers:
         specifier: workspace:*
         version: link:../..
 
-  extensions/tts-local-cli:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
   extensions/typesafe:
     dependencies:
       typebox:
@@ -1607,28 +1451,6 @@ importers:
       zod:
         specifier: 4.6.5
         version: 4.6.5
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-
-  extensions/voice-call:
-    dependencies:
-      typebox:
-        specifier: 1.3.35
-        version: 1.3.35
-      zod:
-        specifier: 4.6.5
-        version: 4.6.5
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
-  extensions/vydra:
     devDependencies:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
@@ -1683,15 +1505,6 @@ importers:
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
-      openclaw:
-        specifier: workspace:*
-        version: link:../..
-
-  extensions/zoom-meetings:
-    devDependencies:
-      '@openclaw/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
       openclaw:
         specifier: workspace:*
         version: link:../..

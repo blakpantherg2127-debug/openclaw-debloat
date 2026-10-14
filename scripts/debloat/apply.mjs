@@ -401,7 +401,7 @@ export const GROUPS = [
   },
   {
     id: "media",
-    apply: false, // pending verification
+    apply: true,
     description: "speech/TTS/STT providers, voice call, talk voice, meetings, media generation",
     extensions: [
       // speech, transcription, voice
@@ -436,6 +436,24 @@ export const GROUPS = [
       "extensions/music-generation-providers.live.test.ts",
       "extensions/video-generation-providers.live.test.ts",
     ],
+    testCases: [
+      [
+        "src/agents/tools/video-generate-tool.test.ts",
+        "exposes video generation for an auth-backed video provider",
+      ],
+      // Also asserts core/channel entries; removed whole because it pins Voice Call's Twilio keys.
+      [
+        "src/config/doc-baseline.integration.test.ts",
+        "includes core, channel, and plugin config metadata",
+      ],
+      [
+        "src/plugins/bundled-plugin-metadata.test.ts",
+        "scopes Voice Call CLI activation to the voicecall command",
+      ],
+    ],
+    testRows: [["src/plugins/bundled-plugin-categories.test.ts", 'pluginId: "google-meet"']],
+    // Its only test covers the removed Voice Call setup migration.
+    testFiles: ["src/plugins/setup-registry.migrations.test.ts"],
   },
   {
     id: "nodes",
@@ -453,7 +471,7 @@ export const GROUPS = [
   },
   {
     id: "examples",
-    apply: false, // pending verification
+    apply: true,
     description: "bundled example app and custodian skills not needed by the keep set",
     extensions: [],
     paths: [

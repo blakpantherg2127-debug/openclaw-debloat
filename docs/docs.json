@@ -111,10 +111,6 @@
       "destination": "/concepts/qa-e2e-automation#matrix-live-lane"
     },
     {
-      "source": "/plugins/reference/fish-audio",
-      "destination": "/plugins/reference/fish-audio-speech"
-    },
-    {
       "source": "/concepts/openclaw-sdk",
       "destination": "/gateway/external-apps"
     },
@@ -1566,33 +1562,7 @@
                     "group": "Meetings and calls",
                     "pages": [
                       "plugins/meeting-plugins",
-                      "plugins/facetime",
-                      "plugins/facetime-recovery",
-                      "plugins/google-meet",
-                      {
-                        "group": "Google Meet",
-                        "pages": [
-                          "plugins/google-meet/transports",
-                          "plugins/google-meet/oauth-and-artifacts",
-                          "plugins/google-meet/config",
-                          "plugins/google-meet/tool-and-modes",
-                          "plugins/google-meet/troubleshooting"
-                        ]
-                      },
-                      "plugins/teams-meetings",
-                      "plugins/slack-huddles",
-                      "plugins/voice-call",
-                      {
-                        "group": "Voice call",
-                        "pages": [
-                          "plugins/voice-call/configuration",
-                          "plugins/voice-call/realtime-and-streaming",
-                          "plugins/voice-call/tts-and-inbound-calls",
-                          "plugins/voice-call/security-and-interfaces",
-                          "plugins/voice-call/troubleshooting"
-                        ]
-                      },
-                      "plugins/zoom-meetings"
+                      "plugins/facetime-recovery"
                     ]
                   },
                   {
@@ -1927,7 +1897,6 @@
                   {
                     "group": "Chat and coding models",
                     "pages": [
-                      "providers/alibaba",
                       "providers/anthropic",
                       "providers/bedrock",
                       "providers/bedrock-mantle",
@@ -1955,24 +1924,7 @@
                   {
                     "group": "Speech and audio",
                     "pages": [
-                      "providers/azure-speech",
-                      "providers/deepgram",
-                      "providers/elevenlabs",
-                      "providers/fish-audio",
-                      "providers/gradium",
-                      "providers/inworld",
-                      "providers/senseaudio"
-                    ]
-                  },
-                  {
-                    "group": "Image, video, and music",
-                    "pages": [
-                      "providers/comfy",
-                      "providers/fal",
-                      "providers/kie",
-                      "providers/pixverse",
-                      "providers/runway",
-                      "providers/vydra"
+                      "providers/fish-audio"
                     ]
                   },
                   {

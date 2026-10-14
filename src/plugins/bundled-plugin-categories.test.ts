@@ -47,7 +47,6 @@ describe("bundled plugin categories", () => {
     { pluginId: "beam", category: "developer-tools", purpose: "coding-session review" },
     { pluginId: "anthropic", category: "models", purpose: "model access despite a CLI backend" },
     { pluginId: "document-extract", category: "documents-files", purpose: "document extraction" },
-    { pluginId: "google-meet", category: "voice", purpose: "live spoken participation" },
     { pluginId: "tokenjuice", category: "context", purpose: "active-context compaction" },
     { pluginId: "team-reports", category: "data-analytics", purpose: "team activity reporting" },
     { pluginId: "diagnostics-otel", category: "infrastructure", purpose: "operational telemetry" },

@@ -238,17 +238,6 @@ describe("createVideoGenerateTool", () => {
     clearRuntimeConfigSnapshot();
   });
 
-  it("exposes video generation for an auth-backed video provider", () => {
-    vi.spyOn(videoGenerationRuntime, "listRuntimeVideoGenerationProviders").mockReturnValue([]);
-
-    expectVideoGenerateTool(
-      createVideoGenerateTool({
-        config: {},
-        authProfileStore: createAuthStore(["runway"]),
-      }),
-    );
-  });
-
   it("refreshes reference-audio policy without repeated normalization per video manifest", () => {
     const plugins: NonNullable<OpenClawConfig["plugins"]> = {
       allow: Array.from({ length: 8 }, (_, index) =>
