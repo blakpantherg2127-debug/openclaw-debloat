@@ -256,40 +256,6 @@ describe("bundled plugin metadata", () => {
     expect(entry?.manifest.activation?.onCommands).toStrictEqual(["workboard"]);
   });
 
-  it("keeps empty-config Gateway startup narrower than declared startup sidecars", () => {
-    const manifestRegistry = createRepoBundledManifestRegistry();
-    const linuxOnlyPlugin = manifestRegistry.plugins[0];
-    assert(linuxOnlyPlugin, "expected bundled plugin manifest fixture");
-    manifestRegistry.plugins.push({
-      ...linuxOnlyPlugin,
-      id: "zz-linux-only-default-test",
-      enabledByDefault: undefined,
-      enabledByDefaultOnPlatforms: ["linux"],
-      activation: { ...linuxOnlyPlugin.activation, onStartup: true },
-    });
-    const index = createInstalledPluginIndexForManifests(manifestRegistry);
-    const expectedPluginIds = [
-      ...manifestRegistry.plugins
-        .filter(
-          (plugin) =>
-            isPluginEnabledByDefaultForPlatform(plugin, "linux") && plugin.activation?.onStartup,
-        )
-        .map((plugin) => plugin.id),
-      ...EXPECTED_EMPTY_CONFIG_GATEWAY_STARTUP_EXTRAS,
-    ].toSorted((left, right) => left.localeCompare(right));
-
-    expect(expectedPluginIds).not.toContain("slack-huddles");
-    expect(
-      resolveGatewayStartupPluginPlanFromRegistry({
-        config: {},
-        env: {},
-        index,
-        manifestRegistry,
-        platform: "linux",
-      }).pluginIds,
-    ).toEqual(expectedPluginIds);
-  });
-
   it("auto-starts Bonjour for empty-config macOS Gateway startup", () => {
     const manifestRegistry = createRepoBundledManifestRegistry();
     const index = createInstalledPluginIndexForManifests(manifestRegistry);

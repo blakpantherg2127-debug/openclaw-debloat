@@ -35,10 +35,6 @@
       "destination": "/web/dashboards#retired-workspaces"
     },
     {
-      "source": "/providers/qwen-oauth",
-      "destination": "/providers/qwen#retired-qwen-portal-authentication"
-    },
-    {
       "source": "/refactor/canvas",
       "destination": "/platforms/mac/canvas"
     },
@@ -167,14 +163,6 @@
       "destination": "/openclaw-agent-runtime"
     },
     {
-      "source": "/providers/modelstudio",
-      "destination": "/providers/qwen"
-    },
-    {
-      "source": "/providers/qwen_modelstudio",
-      "destination": "/providers/qwen"
-    },
-    {
       "source": "/platforms/oracle",
       "destination": "/install/oracle"
     },
@@ -275,14 +263,6 @@
       "destination": "/automation/cron-jobs"
     },
     {
-      "source": "/minimax",
-      "destination": "/providers/minimax"
-    },
-    {
-      "source": "/xiaomi",
-      "destination": "/providers/xiaomi"
-    },
-    {
       "source": "/openai",
       "destination": "/providers/openai"
     },
@@ -299,40 +279,8 @@
       "destination": "/providers/anthropic"
     },
     {
-      "source": "/moonshot",
-      "destination": "/providers/moonshot"
-    },
-    {
-      "source": "/mistral",
-      "destination": "/providers/mistral"
-    },
-    {
       "source": "/openrouter",
       "destination": "/providers/openrouter"
-    },
-    {
-      "source": "/opencode",
-      "destination": "/providers/opencode"
-    },
-    {
-      "source": "/opencode-go",
-      "destination": "/providers/opencode-go"
-    },
-    {
-      "source": "/qianfan",
-      "destination": "/providers/qianfan"
-    },
-    {
-      "source": "/glm",
-      "destination": "/providers/zai"
-    },
-    {
-      "source": "/zai",
-      "destination": "/providers/zai"
-    },
-    {
-      "source": "/providers/glm",
-      "destination": "/providers/zai"
     },
     {
       "source": "/message",
@@ -1650,8 +1598,6 @@
                   {
                     "group": "Models and memory",
                     "pages": [
-                      "plugins/apple-fm",
-                      "plugins/llama-cpp",
                       "plugins/memory-lancedb",
                       "plugins/memory-wiki",
                       "plugins/onnx",
@@ -1983,30 +1929,9 @@
                     "pages": [
                       "providers/alibaba",
                       "providers/anthropic",
-                      "plugins/reference/anthropic-vertex",
-                      "providers/arcee",
-                      "providers/baseten",
                       "providers/bedrock",
                       "providers/bedrock-mantle",
-                      "providers/cerebras",
-                      "providers/chutes",
-                      "providers/cohere",
-                      "providers/deepinfra",
-                      "providers/deepseek",
-                      "providers/featherless",
-                      "providers/fireworks",
-                      "providers/github-copilot",
-                      "providers/gmi",
                       "providers/google",
-                      "providers/groq",
-                      "providers/huggingface",
-                      "providers/longcat",
-                      "providers/meta",
-                      "providers/minimax",
-                      "providers/mistral",
-                      "providers/moonshot",
-                      "providers/novita",
-                      "providers/nvidia",
                       "providers/ollama-cloud",
                       "providers/openai",
                       {
@@ -2023,22 +1948,8 @@
                           "providers/openai/advanced"
                         ]
                       },
-                      "providers/opencode",
-                      "providers/opencode-go",
                       "providers/perplexity-provider",
-                      "providers/qianfan",
-                      "providers/qwen",
-                      "providers/radius",
-                      "providers/stepfun",
-                      "providers/synthetic",
-                      "providers/telnyx",
-                      "providers/tencent",
-                      "providers/together",
-                      "providers/venice",
-                      "providers/volcengine",
-                      "providers/xai",
-                      "providers/xiaomi",
-                      "providers/zai"
+                      "providers/telnyx"
                     ]
                   },
                   {
@@ -2068,37 +1979,14 @@
                     "group": "Gateways and routers",
                     "pages": [
                       "providers/claude-max-api-proxy",
-                      "providers/clawrouter",
-                      "providers/cloudflare-ai-gateway",
-                      "providers/kilocode",
-                      "providers/litellm",
-                      "providers/openrouter",
-                      "providers/vercel-ai-gateway"
+                      "providers/openrouter"
                     ]
                   },
                   {
                     "group": "Local runtimes",
                     "pages": [
                       "providers/ds4",
-                      "providers/llmman",
-                      "providers/lmstudio",
-                      "providers/ollama",
-                      {
-                        "group": "Ollama",
-                        "pages": [
-                          "providers/ollama/setup",
-                          "providers/ollama/model-discovery",
-                          "providers/ollama/node-local-inference",
-                          "providers/ollama/vision",
-                          "providers/ollama/configuration",
-                          "providers/ollama/recipes",
-                          "providers/ollama/web-search",
-                          "providers/ollama/advanced",
-                          "providers/ollama/troubleshooting"
-                        ]
-                      },
-                      "providers/sglang",
-                      "providers/vllm"
+                      "providers/llmman"
                     ]
                   }
                 ]

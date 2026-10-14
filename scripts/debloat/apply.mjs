@@ -255,10 +255,12 @@ export const GROUPS = [
   },
   {
     id: "providers",
-    apply: false, // pending verification
+    apply: true,
     description: "every model provider except anthropic, local runtimes, routers and gateways",
+    // Kept: openai, amazon-bedrock, openrouter, google. The Telegram and Anthropic plugins' own
+    // tests load their policy artifacts, catalogs or login flows; the lean profile denies them
+    // at runtime (DEBLOAT_LOG.md 2.2).
     extensions: [
-      "amazon-bedrock",
       "amazon-bedrock-mantle",
       "anthropic-vertex",
       "apple-fm",
@@ -277,7 +279,6 @@ export const GROUPS = [
       "fireworks",
       "github-copilot",
       "gmi",
-      "google",
       "groq",
       "huggingface",
       "kilocode",
@@ -294,10 +295,8 @@ export const GROUPS = [
       "novita",
       "nvidia",
       "ollama",
-      "openai",
       "opencode",
       "opencode-go",
-      "openrouter",
       "qianfan",
       "qwen",
       "radius",
@@ -316,6 +315,89 @@ export const GROUPS = [
       "zai",
     ],
     paths: [],
+    testFiles: ["src/plugins/provider-model-routes.installed.test.ts"],
+    testCases: [
+      [
+        "src/agents/tools/pdf-tool.model-config.test.ts",
+        "selects a text-extraction model for $primary",
+      ],
+      [
+        "src/config/config-startup-corpus.test.ts",
+        "retains included Copilot discovery.enabled=%j until Doctor migrates it",
+      ],
+      [
+        "src/plugins/bundled-plugin-metadata.test.ts",
+        "keeps empty-config Gateway startup narrower than declared startup sidecars",
+      ],
+      [
+        "src/plugins/manifest-model-params.test.ts",
+        "rejects invalid vLLM model options in default and per-agent scopes",
+      ],
+      [
+        "src/plugins/manifest-model-params.test.ts",
+        "exposes the model schema and server prerequisite only for vLLM model paths",
+      ],
+      [
+        "src/plugins/manifest-model-params.test.ts",
+        "uses the request metadata owner for validation and schema presentation",
+      ],
+      [
+        "src/plugins/official-external-provider-endpoints.test.ts",
+        "mirrors providerEndpoints for every dist-excluded plugin manifest that declares them",
+      ],
+      [
+        "src/plugins/provider-public-artifacts.test.ts",
+        "loads Kimi Code K3 thinking policy before runtime registration",
+      ],
+      [
+        "src/plugins/provider-public-artifacts.test.ts",
+        "preserves %s effort metadata before runtime registration",
+      ],
+      [
+        "src/plugins/provider-public-artifacts.test.ts",
+        "loads OpenCode Go model overrides before runtime registration",
+      ],
+      [
+        "src/plugins/provider-self-hosted-setup.test.ts",
+        "keeps the $providerLabel non-secret marker keyless in ref mode",
+      ],
+      [
+        "src/plugins/web-search-providers.runtime.test.ts",
+        "preserves Moonshot region and model setup without activating the plugin",
+      ],
+    ],
+    testRows: [
+      [
+        "src/agents/tools/agents-list-tool.test.ts",
+        'selection: "an explicit provider with a colliding alias"',
+      ],
+      ["src/plugins/bundled-plugin-categories.test.ts", 'pluginId: "opencode"'],
+    ],
+    edits: [
+      {
+        file: "src/plugins/openai-compatible-embedding-provider.integration.test.ts",
+        why: "drop the removed llama-cpp row from a managed-auth table",
+        apply: (text) => text.replace('it.each(["llama-cpp", "llmman"])', 'it.each(["llmman"])'),
+      },
+      {
+        // Operator configs in the startup corpora select removed providers (for example
+        // tools.web.search.provider "grok"), which this fork rejects as unknown.
+        file: "src/config/config-corpus.test-support.ts",
+        why: "skip startup-corpus fixtures that configure removed providers",
+        apply: (text) =>
+          text.includes("DEBLOAT_REMOVED_PROVIDER_FIXTURES")
+            ? text
+            : text
+                .replace(
+                  "export function listConfigCorpusFixtureNames(): string[] {",
+                  'const DEBLOAT_REMOVED_PROVIDER_FIXTURES = new Set([\n  "generic-github-token.json",\n  "hamverbot.json",\n  "operator-container.json",\n  "operator-host.json",\n  "peanutto.json",\n]);\n\nexport function listConfigCorpusFixtureNames(): string[] {',
+                )
+                .replace(
+                  "  ].toSorted();",
+                  "  ]\n    .filter((name) => !DEBLOAT_REMOVED_PROVIDER_FIXTURES.has(name))\n    .toSorted();",
+                ),
+      },
+    ],
   },
   {
     id: "media",
@@ -820,7 +902,8 @@ function removeLineRange(lines, from, to) {
     lines.splice(from, 1);
   }
 }
-function blockEnd(lines, start, closer = /^\}/u) {
+// Wrapped calls (`it(\n  "title",\n  () => {...},\n);`) close with `);` instead of `});`.
+function blockEnd(lines, start, closer = /^[})]/u) {
   const indent = /^[ \t]*/u.exec(lines[start])[0];
   for (let j = start + 1; j < lines.length; j += 1) {
     const line = lines[j];

@@ -6,11 +6,18 @@ import type peanutto from "../../test/fixtures/config-corpus/peanutto.json";
 
 const corpusDir = fileURLToPath(new URL("../../test/fixtures/config-corpus/", import.meta.url));
 
+const DEBLOAT_REMOVED_PROVIDER_FIXTURES = new Set([
+  "generic-github-token.json",
+  "hamverbot.json",
+  "operator-container.json",
+  "operator-host.json",
+  "peanutto.json",
+]);
+
 export function listConfigCorpusFixtureNames(): string[] {
-  return [
-    ...fs.readdirSync(corpusDir).filter((name) => name.endsWith(".json")),
-    "hamverbot.json",
-  ].toSorted();
+  return [...fs.readdirSync(corpusDir).filter((name) => name.endsWith(".json")), "hamverbot.json"]
+    .filter((name) => !DEBLOAT_REMOVED_PROVIDER_FIXTURES.has(name))
+    .toSorted();
 }
 
 function readOperatorContainer() {

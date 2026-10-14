@@ -206,7 +206,7 @@ describe("OpenAI-compatible embedding destination credential ownership", () => {
     expect(requests[0]?.headers.authorization).toBe("Bearer synthetic-provider-key");
   });
 
-  it.each(["llama-cpp", "llmman"])(
+  it.each(["llmman"])(
     "honors managed %s auth with a retained missing SecretRef at HTTP",
     async (provider) => {
       const ref = {

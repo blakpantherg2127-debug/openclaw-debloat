@@ -88,13 +88,6 @@ describe("agents_list tool", () => {
       model: "openai/gpt-5.6-sol",
       agentRuntime: { id: "codex", source: "model" },
     },
-    {
-      selection: "an explicit provider with a colliding alias",
-      primary: "clawrouter/openai/gpt-5.6",
-      alias: "clawrouter/openai/gpt-5.6",
-      model: "clawrouter/openai/gpt-5.6",
-      agentRuntime: { id: "auto", source: "implicit" },
-    },
   ])(
     "reports canonical model and runtime for $selection",
     async ({ primary, alias, model, agentRuntime }) => {

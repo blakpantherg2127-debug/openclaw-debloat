@@ -836,40 +836,6 @@ describe("configureOpenAICompatibleSelfHostedProviderNonInteractive", () => {
   });
 
   it.each([
-    {
-      providerId: "lmstudio",
-      providerLabel: "LM Studio",
-      envVar: "LM_API_TOKEN",
-      marker: "custom-local",
-    },
-    {
-      providerId: "lmstudio",
-      providerLabel: "LM Studio",
-      envVar: "LM_API_TOKEN",
-      marker: "lmstudio-local",
-    },
-  ])("keeps the $providerLabel non-secret marker keyless in ref mode", async (params) => {
-    const modelId = "Qwen/Qwen3-32B";
-    const ctx = createContext({ providerId: params.providerId, modelId });
-    ctx.opts.secretInputMode = "ref";
-    vi.mocked(ctx.resolveApiKey).mockResolvedValueOnce({ key: params.marker, source: "flag" });
-    vi.mocked(ctx.toApiKeyCredential).mockImplementationOnce(() => {
-      ctx.runtime.error("A synthetic non-secret marker must not become an auth credential.");
-      ctx.runtime.exit(1);
-      return null;
-    });
-
-    const cfg = await configureSelfHostedTestProvider({ ctx, ...params });
-
-    expect(readPrimaryModel(cfg)).toBe(`${params.providerId}/${modelId}`);
-    expect(cfg?.auth?.profiles?.[`${params.providerId}:default`]).toBeUndefined();
-    expect(ctx.toApiKeyCredential).not.toHaveBeenCalled();
-    expect(upsertAuthProfileWithLockOrThrow).not.toHaveBeenCalled();
-    expect(ctx.runtime.error).not.toHaveBeenCalled();
-    expect(ctx.runtime.exit).not.toHaveBeenCalled();
-  });
-
-  it.each([
     { providerId: "vllm", providerLabel: "vLLM", envVar: "VLLM_API_KEY", key: "custom-local" },
     { providerId: "vllm", providerLabel: "vLLM", envVar: "VLLM_API_KEY", key: "lmstudio-local" },
     {

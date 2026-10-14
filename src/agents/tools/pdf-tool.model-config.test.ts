@@ -110,28 +110,6 @@ it("falls back to explicit imageModel config", () => {
   ).toEqual({ primary: "openai/gpt-5.4-mini" });
 });
 
-it.each([
-  {
-    provider: "Minimax",
-    primary: "openai/gpt-5.4",
-    model: "MiniMax-M2.7-highspeed",
-    expected: {
-      primary: "minimax/MiniMax-M2.7-highspeed",
-      fallbacks: ["minimax-portal/MiniMax-M2.7"],
-    },
-  },
-  {
-    provider: "minimax-portal",
-    primary: "minimax-portal/MiniMax-M2.7",
-    model: undefined,
-    expected: { primary: "minimax-portal/MiniMax-M2.7", fallbacks: ["minimax/MiniMax-M2.7"] },
-  },
-])("selects a text-extraction model for $primary", ({ provider, primary, model, expected }) => {
-  available.add("minimax");
-  available.add("minimax-portal");
-  expect(resolve(configuredProvider(provider, primary, model))).toEqual(expected);
-});
-
 it("uses an authenticated custom provider's configured vision model", () => {
   available.add("hatchery");
   expect(

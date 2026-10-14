@@ -137,3 +137,37 @@ src/commands/doctor src/agents/tools` plus the keep plugins' tests), the plan's 
 - Process note: two jobs were killed by the tool's 2 h limit and running the build alongside tests
   tripled its time; long jobs now run detached, one at a time.
 - Next: group 2 (providers).
+
+### 2.2 Group 2: providers (removed, 4 kept)
+
+- Removed 52 model-provider plugins, including every local runtime (llama-cpp, lmstudio, ollama,
+  sglang, vllm, apple-fm) and the routers/gateways (litellm, clawrouter, cloudflare-ai-gateway,
+  vercel-ai-gateway, kilocode, copilot-proxy), plus voyage (embeddings only; the lean profile uses
+  keyword memory search).
+- Kept: `openai`, `amazon-bedrock`, `openrouter`, `google`. First attempt removed all 56; the
+  Telegram plugin's own test harnesses load the openai/amazon-bedrock provider policy artifacts and
+  its `/login` tests use openrouter, and the Anthropic plugin's tests load google's catalog. The
+  plan allows only fixes that do not touch Keep, so these four stay. The lean profile denies them,
+  so they never load at runtime.
+- Test pruning (core-set failures caused by the removal): 1 whole file (Arcee installed-owner
+  routes), 12 cases, 2 table rows, 1 table edit (llama-cpp row), and 5 startup-corpus fixtures
+  (generic-github-token, hamverbot, operator-container, operator-host, peanutto) filtered out of
+  the config/state startup corpora because they configure removed providers.
+- Finding for the report: a config that names a removed provider's surface (e.g.
+  `tools.web.search.provider: "grok"`) now fails validation and blocks startup until edited.
+- Verification: `pnpm tsgo:all` pass (69 min); `pnpm build` pass; core set: only pre-existing
+  failures (plus `src/cron/service.pr-automation.test.ts`, failed once, passed on rerun: flaky).
+  Telegram and Anthropic plugin tests: all pass. Isolated Gateway (lean profile): loads anthropic,
+  browser, duckduckgo, memory-core, telegram; tool catalog unchanged (67, all keep tools present);
+  doctor has no errors (only the placeholder Telegram 401).
+- Size change (after group 1 -> after group 2): extensions 140 -> 88, workspace projects 164 ->
+  112, lockfile 18,155 -> 17,692 lines, packed tarball 74.0 -> 73.0 MB (221.3 -> 218.6 MB
+  unpacked; most providers were already external packages), dist 426 -> 419 MB.
+- Interruptions: the container restarted at ~08:21 UTC on 2026-10-14 (killed a test run; files
+  survived). On request, ran a full status report: clean `HEAD` (group 1) passed install, build and
+  typecheck; doctor clean; `security audit --deep`: 0 critical, 3 warn (trusted proxies unset,
+  personal-assistant trust-model heuristic, deep probe lacked operator.read). The full `pnpm test`
+  was stopped at the owner's request after 4,838/17,544 files (1,154 failing cases, mostly
+  maintainer tooling tests that need a full git clone / Git 2.45). Also noted: removing QA Lab
+  dropped its e2e tests for exec approvals, sandboxed exec and gateway authz.
+- Next: group 3 (media, speech, meetings) together with examples.

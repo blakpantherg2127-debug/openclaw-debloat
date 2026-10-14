@@ -66,37 +66,6 @@ describe("official external provider endpoint catalog mirror", () => {
   const extensionManifests = listExtensionManifests();
   const catalogManifestsByPluginId = listCatalogManifestsByPluginId();
 
-  it("mirrors providerEndpoints for every dist-excluded plugin manifest that declares them", () => {
-    const checkedPluginIds: string[] = [];
-    for (const { dirName, manifest } of extensionManifests) {
-      if (!Array.isArray(manifest.providerEndpoints)) {
-        continue;
-      }
-      if (!distExcludedExtensionDirs.has(dirName)) {
-        continue;
-      }
-      const pluginId = typeof manifest.id === "string" ? manifest.id : undefined;
-      const catalogManifest = pluginId ? catalogManifestsByPluginId.get(pluginId) : undefined;
-      expect(
-        catalogManifest,
-        `extensions/${dirName} is excluded from dist and declares providerEndpoints; ` +
-          `official-external-provider-catalog.json needs an entry for plugin "${pluginId}" ` +
-          `mirroring them, or endpoint classification breaks when the plugin is not installed`,
-      ).toBeDefined();
-      expect(
-        catalogManifest?.providerEndpoints,
-        `catalog providerEndpoints for plugin "${pluginId}" must mirror extensions/${dirName}/openclaw.plugin.json`,
-      ).toEqual(manifest.providerEndpoints);
-      if (pluginId) {
-        checkedPluginIds.push(pluginId);
-      }
-    }
-    // The mirror set going empty means the scan above stopped covering the
-    // externalized providers this contract exists for.
-    expect(checkedPluginIds).toContain("qwen");
-    expect(checkedPluginIds).toContain("moonshot");
-  });
-
   it("keeps catalog providerEndpoints in sync with local plugin manifests", () => {
     const extensionManifestsById = new Map(
       extensionManifests

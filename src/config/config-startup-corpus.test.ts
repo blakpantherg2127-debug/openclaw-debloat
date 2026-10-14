@@ -97,44 +97,6 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 afterEach(() => vi.unstubAllEnvs());
 
 describe("operator config startup corpus", () => {
-  it.each([false, null])(
-    "retains included Copilot discovery.enabled=%j until Doctor migrates it",
-    async (enabled) => {
-      const home = tempDirs.make("openclaw-copilot-migration-");
-      const configPath = path.join(home, "openclaw.json");
-      const legacy = {
-        plugins: {
-          entries: { "github-copilot": { enabled: true, config: { discovery: { enabled } } } },
-        },
-      };
-      fs.writeFileSync(path.join(home, "copilot.json"), JSON.stringify(legacy));
-      fs.writeFileSync(configPath, JSON.stringify({ $include: "copilot.json" }));
-      const io = createConfigIO({
-        configPath,
-        env: { ...process.env, OPENCLAW_STATE_DIR: home },
-        homedir: () => home,
-        observe: false,
-      });
-      const snapshot = await io.readConfigFileSnapshot();
-      expect(snapshot.valid).toBe(false);
-      expect(snapshot.sourceConfig.plugins?.entries?.["github-copilot"]?.config).toEqual({
-        discovery: { enabled },
-      });
-      const repaired = migrateLegacyConfig(snapshot.sourceConfig, {
-        sourceConfigBeforeMigrations: snapshot.sourceConfigBeforeMigrations,
-      });
-      expect(repaired.config?.plugins?.entries?.["github-copilot"]).toEqual({
-        enabled: true,
-        config: {},
-      });
-      expect(
-        migrateLegacyConfig(repaired.config, { sourceConfigBeforeMigrations: repaired.config })
-          .changes,
-      ).toEqual([]);
-      expect(JSON.parse(fs.readFileSync(path.join(home, "copilot.json"), "utf8"))).toEqual(legacy);
-    },
-  );
-
   it.each(fixtureNames)(
     "%s loads, prepares model rows, and offers provider login",
     async (name) => {

@@ -549,12 +549,7 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
   },
   {
     testFile: "src/commands/models/auth.minimax-chat.test.ts",
-    watchGlobs: [
-      "extensions/minimax/index.ts",
-      "extensions/minimax/oauth.runtime.ts",
-      "extensions/minimax/oauth.ts",
-      "extensions/minimax/provider-registration.ts",
-    ],
+    watchGlobs: ["extensions/minimax/index.ts"],
   },
   {
     testFile: "src/commands/status.memory-presence.worker.test.ts",
@@ -1476,8 +1471,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
       "openclaw.mjs",
       "src/cli/program/register.agent-turn.ts",
       "src/commands/agent-via-gateway.ts",
-      "extensions/litellm/index.ts",
-      "extensions/litellm/provider-catalog.ts",
     ],
   },
   {
@@ -1669,11 +1662,7 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
   },
   {
     testFile: "src/gateway/setup-inference.first-signin.integration.test.ts",
-    watchGlobs: [
-      "extensions/github-copilot/index.ts",
-      "extensions/github-copilot/login.ts",
-      "extensions/github-copilot/starter-model.ts",
-    ],
+    watchGlobs: ["extensions/github-copilot/index.ts"],
   },
   ...[
     "src/gateway/worker-environments/prepared-environment-store.test.ts",
