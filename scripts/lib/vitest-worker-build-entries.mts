@@ -106,7 +106,6 @@ import { nativeSchtasksIntegrationEnabled } from "./vitest-worker-declarations.m
 
 // These fixture hooks require physical module boundaries and complete namespaces.
 export const preservedModuleBuildSources = [
-  "extensions/acpx/src/runtime.admission-retention.test-support.ts",
   "scripts/lib/tsdown-declaration-boundary.mts",
   "scripts/lib/sqlite-reliability-writer.ts",
   "scripts/plugin-release-pretag-pack-check.ts",
@@ -146,11 +145,6 @@ export const preservedModuleBuildSources = [
   "scripts/lib/vitest-batch-runner.mts",
   "scripts/check-memory-fd-repro.mts",
   "scripts/sparkle-build.ts",
-  "scripts/crabbox-wrapper.mts",
-  "scripts/crabbox-source-capsule.mts",
-  "scripts/crabbox-staging.mts",
-  "scripts/crabbox-staging-claims.mts",
-  "scripts/crabbox-staging-artifacts.mts",
   "scripts/check-deadcode-exports.mts",
   "scripts/check-deadcode-unused-files.mts",
   "scripts/check-release-metadata-only.mts",

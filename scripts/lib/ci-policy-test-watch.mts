@@ -120,13 +120,7 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
   })),
   {
     testFile: "test/scripts/crabbox-wrapper.test.ts",
-    watchGlobs: [
-      "scripts/crabbox-source-capsule.mts",
-      "scripts/crabbox-source-receiver.mts",
-      "scripts/crabbox-staging-artifacts.mts",
-      "scripts/crabbox-staging-claims.mts",
-      "scripts/crabbox-staging.mts",
-    ],
+    watchGlobs: [],
   },
   ...[
     "src/commands/agents.roles.test.ts",
@@ -183,16 +177,15 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
     testFile: "extensions/codex/src/session-catalog-native-performance.test.ts",
     watchGlobs: ["pnpm-lock.yaml"],
   },
-  ...[
-    "extensions/copilot/src/attempt-transcript-journal.test.ts",
-    "extensions/memory-core/src/memory/manager-sync-ops.startup-catchup.test.ts",
-  ].map((testFile): PolicyTestWatch => ({
-    testFile,
-    watchGlobs: [
-      "src/config/sessions/session-transcript-reconcile.worker.ts",
-      "src/config/sessions/session-transcript.worker.ts",
-    ],
-  })),
+  ...["extensions/memory-core/src/memory/manager-sync-ops.startup-catchup.test.ts"].map(
+    (testFile): PolicyTestWatch => ({
+      testFile,
+      watchGlobs: [
+        "src/config/sessions/session-transcript-reconcile.worker.ts",
+        "src/config/sessions/session-transcript.worker.ts",
+      ],
+    }),
+  ),
   ...[
     "extensions/diffs/src/store.test.ts",
     "extensions/diffs/src/tool.test.ts",
@@ -1678,9 +1671,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
   {
     testFile: "src/gateway/worker-environments/provider-crabbox-runtime-preflight.test.ts",
     watchGlobs: [
-      "extensions/crabbox/src/crabbox-worker-provider.ts",
-      "extensions/crabbox/src/crabbox-worker-preflight.ts",
-      "extensions/crabbox/src/crabbox-worker-provision-commands.ts",
       "src/gateway/worker-environments/store.worker.ts",
       "src/gateway/worker-environments/store.kernel.ts",
     ],

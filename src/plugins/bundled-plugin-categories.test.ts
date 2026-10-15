@@ -42,8 +42,6 @@ describe("bundled plugin categories", () => {
 
   it.each([
     { pluginId: "codex", category: "agent-runtimes", purpose: "native agent executor" },
-    { pluginId: "acpx", category: "agent-runtimes", purpose: "ACP execution backend" },
-    { pluginId: "copilot", category: "agent-runtimes", purpose: "native agent executor" },
     { pluginId: "beam", category: "developer-tools", purpose: "coding-session review" },
     { pluginId: "anthropic", category: "models", purpose: "model access despite a CLI backend" },
     { pluginId: "document-extract", category: "documents-files", purpose: "document extraction" },

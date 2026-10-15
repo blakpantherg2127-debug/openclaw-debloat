@@ -25,7 +25,6 @@
   },
   "publishConfig": {
     "executableFiles": [
-      "dist/crabbox-wrapper.js",
       "dist/entry.js",
       "dist/index.js",
       "dist/mac-node-worker.js",
@@ -1779,10 +1778,6 @@
     "config:docs:gen": "node --import ./scripts/tsx.mjs scripts/generate-config-doc-baseline.ts --write",
     "config:schema:check": "node --import ./scripts/tsx.mjs scripts/generate-base-config-schema.ts --check",
     "config:schema:gen": "node --import ./scripts/tsx.mjs scripts/generate-base-config-schema.ts --write",
-    "crabbox:hydrate": "node scripts/crabbox-wrapper.mjs actions hydrate",
-    "crabbox:run": "node scripts/crabbox-wrapper.mjs run",
-    "crabbox:stop": "node scripts/crabbox-wrapper.mjs stop",
-    "crabbox:warmup": "node scripts/crabbox-wrapper.mjs warmup",
     "deadcode:dependencies": "pnpm deadcode:full",
     "deadcode:exports": "node --import ./scripts/tsx.mjs scripts/check-deadcode-exports.mts",
     "deadcode:full": "pnpm dlx --package knip@6.32.2 knip --config config/knip.config.ts --production --no-progress --reporter compact --no-config-hints --exclude duplicates && pnpm dlx --package knip@6.32.2 knip --config config/knip.all-exports.config.ts --no-progress --reporter compact --no-config-hints --exports --exclude duplicates",

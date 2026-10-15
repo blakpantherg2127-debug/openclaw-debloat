@@ -64,7 +64,6 @@
     ],
     // Deny wins over allow and auto-enable; lists every other plugin still in this tree.
     deny: [
-      "acpx",
       "active-memory",
       "admin-http-rpc",
       "agentsapi",
@@ -75,8 +74,6 @@
       "cloudflare",
       "code-mode-quickjs",
       "codex",
-      "copilot",
-      "crabbox",
       "cua-computer",
       "device-pair",
       "diagnostics-otel",

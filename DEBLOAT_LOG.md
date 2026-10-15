@@ -221,3 +221,47 @@ src/commands/doctor src/agents/tools` plus the keep plugins' tests), the plan's 
   same 5 plugins, 67-tool catalog, doctor no errors, idle RSS 1,686 MB.
 - Sizes: extensions 64 -> 60, lockfile 17,505 -> 17,442 lines, workspace projects 88 -> 84.
 - Next: group 5 (harnesses).
+
+### 2.5 Group 5: harnesses and cloud workers (3 removed, 2 kept)
+
+- Removed: `copilot` (GitHub Copilot agent runtime), `acpx` (ACP agents backend), `crabbox`
+  (cloud worker provider) plus the Crabbox remote-testing tooling built on it
+  (`scripts/crabbox-*`, `.crabbox.yaml`). Group edits drop the `crabbox-wrapper` tsdown build
+  entry, its `dist/crabbox-wrapper.js` package file and the `crabbox:*` package scripts (the first
+  build failed with "Cannot resolve entry module scripts/crabbox-wrapper.mts").
+- Kept `codex`: the kept `openai` provider imports `../codex/`, and Telegram's own tests expect the
+  Codex runtime. Kept `agentsapi`: the core session native-binding tests use it as their fixture
+  harness (22 of 34 cases failed without it). The lean profile denies both.
+- Script fixes found here: the path-registry pruner now also drops the first entry of a flat list
+  (it had skipped `[`-adjacent lines to protect tuple heads) and treats files deleted earlier in
+  the same run as removed. Group 4 gained one more pruned case (`talk-defaults` reads
+  `apps/macos` from `HEAD` via `git show`, so it only failed after group 4 was committed).
+- Test pruning: 2 category rows (acpx, copilot); 16 tests/tools that import the removed plugins.
+- Verification: `pnpm tsgo:all` pass; `pnpm build` pass (53 min); core set: no failures beyond the
+  pre-existing list. Isolated Gateway: same 5 plugins, 67-tool catalog, doctor no errors, idle RSS
+  1,724 MB.
+- Sizes: extensions 60 -> 57, lockfile 17,442 -> 16,917 lines, workspace projects 84 -> 81.
+- The container restarted twice during this group; files on disk survived each time.
+
+### 2.6 Core-source strip candidates (kept)
+
+Each was checked against the code; none is removed. Importer counts are production files outside
+the directory.
+
+| Candidate                                           | Evidence                                                                            | Decision                                      |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------- |
+| Talk mode (`src/talk`, 50 files)                    | 57 importers; 1 plugin-SDK export                                                   | kept                                          |
+| Voice wake                                          | woven into `src/gateway`, `server-methods`, `src/state` (25 files)                  | kept                                          |
+| TTS (`src/tts`) / realtime transcription            | 41 / 10 importers; 2 tts + 8 realtime + 4 speech SDK exports                        | kept                                          |
+| Meetings core (`src/meeting-bot`, 69 files)         | backs `openclaw/plugin-sdk/meeting-runtime` and `meeting-page-script-runtime`       | kept                                          |
+| Image/music/video/media generation core             | 9/6/8/15 importers; 7 SDK exports                                                   | kept                                          |
+| Swarm                                               | referenced from 111 core files (gateway session rows, run execution, tools catalog) | kept                                          |
+| Cloud workers (`src/worker`, config `cloudWorkers`) | 87 importers; 77 files reference cloud workers; 3 SDK exports                       | kept                                          |
+| Camera / screen / location / HealthKit              | core node tools (`nodes`, `screen`, `mobile_ui`) and node protocol                  | kept; their apps and node plugins are removed |
+
+Reason common to all: these are core runtime and public plugin-SDK surfaces. Removing them would
+break the documented way to add the removed features back (`openclaw plugins install
+@openclaw/<id>`), which the owner asked to keep working, and each would need edits across dozens
+of core files with no test proof possible here in reasonable time.
+
+- Next: Phase 3 (clean build, measurements, full tests, report).

@@ -478,6 +478,8 @@ export const GROUPS = [
         "src/config/config.plugin-validation.test.ts",
         "uses manifest defaults when warning about configured bundled plugins (#122746)",
       ],
+      // Reads apps/macos and apps/android sources from HEAD with `git show`.
+      ["src/config/talk-defaults.test.ts", "matches the Apple and Android runtime constants"],
     ],
     edits: [
       {
@@ -490,10 +492,59 @@ export const GROUPS = [
   },
   {
     id: "harnesses",
-    apply: false, // pending verification
+    apply: true,
     description: "Codex, Copilot, ACP, OpenAI Agents API harnesses and the Crabbox cloud worker",
-    extensions: ["codex", "copilot", "acpx", "agentsapi", "crabbox"],
-    paths: [],
+    // codex stays: the kept openai plugin imports ../codex/ and Telegram's tests expect the
+    // Codex runtime (DEBLOAT_LOG.md 2.5).
+    // agentsapi stays: the core session native-binding tests use it as their fixture harness
+    // (22 of 34 cases fail without it) (DEBLOAT_LOG.md 2.5).
+    extensions: ["copilot", "acpx", "crabbox"],
+    testRows: [
+      ["src/plugins/bundled-plugin-categories.test.ts", 'pluginId: "acpx"'],
+      ["src/plugins/bundled-plugin-categories.test.ts", 'pluginId: "copilot"'],
+    ],
+    // Crabbox remote-testing tooling (wrapper, staging, source capsule) built on the plugin.
+    paths: [
+      "scripts/crabbox-remote-redact.mjs",
+      "scripts/crabbox-remote-redact.mts",
+      "scripts/crabbox-routing-policy.mts",
+      "scripts/crabbox-setup.mjs",
+      "scripts/crabbox-setup.mts",
+      "scripts/crabbox-source-capsule.mts",
+      "scripts/crabbox-source-mirror.mts",
+      "scripts/crabbox-source-receiver.mts",
+      "scripts/crabbox-staging-artifacts.mts",
+      "scripts/crabbox-staging-claims.mts",
+      "scripts/crabbox-staging-identity.mts",
+      "scripts/crabbox-staging-location.mts",
+      "scripts/crabbox-staging-provenance.mts",
+      "scripts/crabbox-staging-users.mts",
+      "scripts/crabbox-staging-witness.mts",
+      "scripts/crabbox-staging.mts",
+      "scripts/crabbox-untrusted-bootstrap.sh",
+      "scripts/crabbox-wrapper-providers.mts",
+      "scripts/crabbox-wrapper.mjs",
+      "scripts/crabbox-wrapper.mts",
+      ".crabbox.yaml",
+    ],
+    edits: [
+      {
+        // The Crabbox remote-testing wrapper imports the removed crabbox plugin.
+        file: "tsdown.config.ts",
+        why: "drop the crabbox-wrapper build entry",
+        apply: (text) =>
+          text.replace(/^[ \t]*"crabbox-wrapper": "scripts\/crabbox-wrapper\.mts",\n/mu, ""),
+      },
+      {
+        file: "package.json",
+        why: "drop the crabbox-wrapper package file and crabbox:* scripts",
+        apply: (text) =>
+          text.replace(
+            /^[ \t]*"(?:dist\/crabbox-wrapper\.js|crabbox:[a-z]+)"(?:: "[^"\n]*")?,\n/gmu,
+            "",
+          ),
+      },
+    ],
   },
   {
     id: "examples",
@@ -744,6 +795,8 @@ function escapeRe(value) {
 }
 
 const productionRefs = new Map();
+// Files the prune pass deleted; later registry pruning treats them as removed too.
+const prunedFiles = new Set();
 {
   const idAlt = [...removedExtensionIds].map(escapeRe).join("|") || "(?!)";
   const pkgAlt = [...removedPackageNames].map(escapeRe).join("|");
@@ -822,6 +875,7 @@ const productionRefs = new Map();
   }
   for (const file of [...deleted].toSorted()) {
     remove(file);
+    prunedFiles.add(file);
   }
   log(`${deleted.size} test/tool file(s) importing removed code ${dryRun ? "to prune" : "pruned"}`);
 }
@@ -883,7 +937,9 @@ for (const [file, specs] of productionRefs) {
 {
   const removedPrefixes = removedPaths.map((p) => p.replace(/\/$/u, ""));
   const gone = (p) =>
-    !exists(p) && removedPrefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+    !exists(p) &&
+    (prunedFiles.has(p) ||
+      removedPrefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`)));
   const PATH = String.raw`"((?:extensions|test|src|scripts)\/[^"\n]+\.(?:[cm]?[jt]sx?))"`;
   const shapes = [
     // [\n  "path",\n  [...],\n],  (multi-line tuple, closed at the same indentation)
@@ -901,8 +957,15 @@ for (const [file, specs] of productionRefs) {
       out = out.replace(shape, (match, _indent, target) => (gone(target) ? "" : match));
     }
     return out.replace(listLineRe, (match, target, offset, whole) => {
+      if (!gone(target)) {
+        return match;
+      }
       const before = whole.slice(0, offset).trimEnd();
-      return gone(target) && !before.endsWith("[") ? "" : match;
+      // After `[` this is either a tuple head (`[\n "path",\n [...]`) or the first entry of
+      // a flat list; it is a flat list when the next line is another string or the `]`.
+      const next = whole.slice(offset + match.length).trimStart();
+      const flatList = next.startsWith('"') || next.startsWith("]");
+      return before.endsWith("[") && !flatList ? match : "";
     });
   };
   for (const dir of ["scripts/lib", "test/vitest"]) {

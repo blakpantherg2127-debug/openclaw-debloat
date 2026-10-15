@@ -19,8 +19,6 @@ export const vitestWorkerDeclarationEntries = {
     "src/infra/postgres-sync/locks-runtime.test-support.ts",
   "worker/native-worker-entrypoints.test-support":
     "src/worker/native-worker-entrypoints.test-support.ts",
-  "extensions/acpx/src/runtime.admission-retention-entrypoint.test-support":
-    "extensions/acpx/src/runtime.admission-retention-entrypoint.test-support.ts",
   "extensions/diagnostics-prometheus/src/install-runtime-entrypoints.test-support":
     "extensions/diagnostics-prometheus/src/install-runtime-entrypoints.test-support.mts",
   ...runtimeProcessDeclarationEntries,

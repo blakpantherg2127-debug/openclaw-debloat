@@ -1557,7 +1557,6 @@
                       "specs/codex-supervision"
                     ]
                   },
-                  "plugins/copilot",
                   {
                     "group": "Meetings and calls",
                     "pages": [

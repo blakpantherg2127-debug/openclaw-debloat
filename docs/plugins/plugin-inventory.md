@@ -50,7 +50,7 @@ Each entry lists the package, distribution route, and description.
 
 ## Core npm package
 
-33 plugins
+32 plugins
 
 - **[active-memory](/plugins/reference/active-memory)** (`openclaw`) - included in OpenClaw. Runs bounded pre-reply memory retrieval and implements per-agent Remember across conversations for eligible private conversations.
 
@@ -69,8 +69,6 @@ Each entry lists the package, distribution route, and description.
 - **[cloudflare](/plugins/reference/cloudflare)** (`@openclaw/cloudflare`) - included in OpenClaw, and also from npm or ClawHub: `clawhub:@openclaw/cloudflare`. Cloudflare R2 storage for named OpenClaw storage locations.
 
 - **[code-mode-quickjs](/plugins/reference/code-mode-quickjs)** (`@openclaw/code-mode-quickjs`) - included in OpenClaw. Hardened JavaScript execution for Code Mode using QuickJS in WebAssembly.
-
-- **[crabbox](/plugins/reference/crabbox)** (`@openclaw/crabbox-provider`) - included in OpenClaw. Cloud worker provider and lease-backed sandbox backend for the Crabbox CLI.
 
 - **[cua-computer](/plugins/reference/cua-computer)** (`@openclaw/cua-computer`) - included in OpenClaw. Experimental CUA Driver computer control for macOS, Windows, and Linux node hosts.
 
@@ -120,17 +118,13 @@ Each entry lists the package, distribution route, and description.
 
 ## Official external packages
 
-25 plugins
-
-- **[acpx](/plugins/reference/acpx)** (`@openclaw/acpx`) - npm or ClawHub: `clawhub:@openclaw/acpx`. OpenClaw ACP runtime backend with plugin-owned session and transport management.
+23 plugins
 
 - **[amazon-bedrock](/plugins/reference/amazon-bedrock)** (`@openclaw/amazon-bedrock-provider`) - npm or ClawHub: `clawhub:@openclaw/amazon-bedrock-provider`. OpenClaw Amazon Bedrock provider plugin with model discovery, embeddings, and guardrail support.
 
 - **[brave](/plugins/reference/brave)** (`@openclaw/brave-plugin`) - npm or ClawHub: `clawhub:@openclaw/brave-plugin`. OpenClaw Brave Search provider plugin for web search.
 
 - **[codex](/plugins/reference/codex)** (`@openclaw/codex`) - npm or ClawHub: `clawhub:@openclaw/codex`. Codex app-server harness and native session catalog.
-
-- **[copilot](/plugins/reference/copilot)** (`@openclaw/copilot`) - npm or ClawHub: `clawhub:@openclaw/copilot`. Registers the GitHub Copilot agent runtime.
 
 - **[diagnostics-otel](/plugins/reference/diagnostics-otel)** (`@openclaw/diagnostics-otel`) - npm or ClawHub: `clawhub:@openclaw/diagnostics-otel`. OpenClaw diagnostics OpenTelemetry exporter for metrics, traces, and logs.
 
