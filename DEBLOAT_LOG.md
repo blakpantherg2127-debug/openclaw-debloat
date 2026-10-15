@@ -195,3 +195,29 @@ src/commands/doctor src/agents/tools` plus the keep plugins' tests), the plan's 
   into `dist/worker` and rebuilds keep old hashed Control UI assets); Phase 3 measures from a
   clean build.
 - Next: group 4 (apps/ and node plugins).
+
+### 2.4 Group 4: native apps and node plugins (removed, apps/shared kept)
+
+- Removed `apps/android`, `apps/ios`, `apps/linux`, `apps/macos`, `apps/macos-mlx-tts`,
+  `apps/swabble` (~2,500 files) and the node-host plugins `linux-node` (camera, location,
+  notifications), `canvas` (macOS panels), `file-transfer` (paired-node files), `logbook`
+  (paired-node screen snapshots).
+- Kept `apps/shared`: the Control UI imports its `tool-display.json` and the mermaid renderer
+  writes its assets there (first attempt removed all of `apps/` and the UI lost that import).
+  Kept `apps/.i18n` (native i18n tooling and tests read it).
+- Build fix in the script: `scripts/write-cli-startup-metadata.ts` hashed three canvas source files
+  into the nodes help signature; the group edit drops those lines. The script also re-removes
+  group paths after the generators run, because `native-catalogs:gen` writes into `apps/macos`.
+- Camera/screen/location/HealthKit in core (`src/node-host`, node tools `nodes`, `screen`,
+  `mobile_ui`) stay: they are core tool and protocol surfaces shared with the Gateway; with no apps
+  or node plugins they have nothing to drive. Logged as kept.
+- Test pruning: 1 whole file (canvas doctor migration resources), 2 cases (canvas compat record,
+  canvas manifest-default validation).
+- Verification: `pnpm tsgo:all` pass; first build failed on the canvas hash input, rebuild after
+  the edit passed; core set: only pre-existing failures plus two that passed on rerun
+  (`run-receipt-store` flaky, `session-accessor.sqlite-branches` timing assertion under load).
+  A stale `.artifacts/vitest-workers` cache after the build-script edit made ~100 suites fail with
+  "Source changed during compiled subprocess invocation"; clearing it fixed them. Isolated Gateway:
+  same 5 plugins, 67-tool catalog, doctor no errors, idle RSS 1,686 MB.
+- Sizes: extensions 64 -> 60, lockfile 17,505 -> 17,442 lines, workspace projects 88 -> 84.
+- Next: group 5 (harnesses).

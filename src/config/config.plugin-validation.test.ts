@@ -1038,28 +1038,6 @@ describe("config plugin validation", () => {
     });
   });
 
-  it("uses manifest defaults when warning about configured bundled plugins (#122746)", () => {
-    const res = validateInSuite({
-      plugins: {
-        entries: {
-          canvas: { config: { host: { enabled: false } } },
-          diffs: { config: { defaults: { fontSize: 15 } } },
-        },
-      },
-    });
-
-    expect(res.ok).toBe(true);
-    if (!res.ok) {
-      return;
-    }
-    expectNoPath(res.warnings, "plugins.entries.canvas");
-    expectPathMessage(
-      res.warnings,
-      "plugins.entries.diffs",
-      "plugin disabled (bundled (disabled by default)) but config is present",
-    );
-  });
-
   it.each([{ config: { sessionCatalog: { enabled: false, homes: ["/synthetic/catalog"] } } }])(
     "retains disabled-plugin warnings for authored Codex settings: %j",
     (entry) => {

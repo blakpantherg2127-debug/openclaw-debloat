@@ -1588,7 +1588,6 @@
                       "plugins/beam",
                       "plugins/cloudflare",
                       "plugins/geolocation",
-                      "plugins/logbook",
                       "plugins/mcp-relay",
                       "plugins/oc-path",
                       "plugins/session-share",

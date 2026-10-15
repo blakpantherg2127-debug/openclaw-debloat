@@ -79,10 +79,7 @@ const runtimeConsumers = [
     mode: "runtime" as const,
     dir: "",
   })),
-  ...[
-    "extensions/deepinfra/provider.contract.test.ts",
-    "extensions/file-transfer/src/workspace-service.test.ts",
-  ].map((file) => ({
+  ...["extensions/deepinfra/provider.contract.test.ts"].map((file) => ({
     file,
     configs: ["test/vitest/vitest.extensions.config.ts"],
     mode: "runtime" as const,

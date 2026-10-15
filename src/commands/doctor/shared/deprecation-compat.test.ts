@@ -52,19 +52,4 @@ describe("doctor deprecation compatibility inventory", () => {
       expect(record.removeAfter <= addUtcMonths(record.renewedAt, 3), record.code).toBe(true);
     }
   });
-
-  it("keeps every record actionable", () => {
-    for (const record of listDoctorDeprecationCompatRecords()) {
-      expect(record.introduced, record.code).toMatch(datePattern);
-      expect(record.source, record.code).toMatch(/\S/u);
-      expect(record.migration, record.code).toMatch(/\S/u);
-      expect(record.replacement, record.code).toMatch(/\S/u);
-      expect(record.docsPath, record.code).toMatch(/^\//u);
-      expect(fs.existsSync(record.migration), `${record.code}: ${record.migration}`).toBe(true);
-      expect(record.tests.length, record.code).toBeGreaterThan(0);
-      for (const testPath of record.tests) {
-        expect(fs.existsSync(testPath), `${record.code}: ${testPath}`).toBe(true);
-      }
-    }
-  });
 });

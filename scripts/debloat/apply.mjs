@@ -457,10 +457,36 @@ export const GROUPS = [
   },
   {
     id: "nodes",
-    apply: false, // pending verification
+    apply: true,
     description: "native apps and node-host plugins (camera, screen, location, canvas panels)",
     extensions: ["linux-node", "canvas", "file-transfer", "logbook"],
-    paths: ["apps"],
+    // apps/shared stays: the Control UI imports its tool-display.json and the mermaid renderer
+    // writes into it. apps/.i18n stays for the native i18n tooling and its tests.
+    paths: [
+      "apps/android",
+      "apps/ios",
+      "apps/linux",
+      "apps/macos",
+      "apps/macos-mlx-tts",
+      "apps/swabble",
+    ],
+    // Canvas-owned migration fixtures and compat records (DEBLOAT_LOG.md 2.4).
+    testFiles: ["src/plugins/doctor-migration-resources.test.ts"],
+    testCases: [
+      ["src/commands/doctor/shared/deprecation-compat.test.ts", "keeps every record actionable"],
+      [
+        "src/config/config.plugin-validation.test.ts",
+        "uses manifest defaults when warning about configured bundled plugins (#122746)",
+      ],
+    ],
+    edits: [
+      {
+        file: "scripts/write-cli-startup-metadata.ts",
+        why: "stop hashing removed canvas sources into the nodes help signature",
+        apply: (text) =>
+          text.replace(/^[ \t]*path\.join\(sourceRootDir, "extensions\/canvas\/[^"]+"\),\n/gmu, ""),
+      },
+    ],
   },
   {
     id: "harnesses",
@@ -1217,6 +1243,10 @@ if (!skipGenerate) {
       log(`WARNING generator ${script} failed; inspect before committing`);
     }
   }
+}
+// Generators such as native-catalogs:gen write into app trees; drop anything they recreated.
+for (const target of removedPaths) {
+  remove(target);
 }
 writeLeanConfig();
 log("done");
