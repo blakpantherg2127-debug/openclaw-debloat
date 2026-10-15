@@ -265,3 +265,26 @@ break the documented way to add the removed features back (`openclaw plugins ins
 of core files with no test proof possible here in reasonable time.
 
 - Next: Phase 3 (clean build, measurements, full tests, report).
+
+## Phase 3: measure and report
+
+### 3.1 Clean builds and the empty state-retention surface (fixed)
+
+- Clean builds (no `dist`, no build caches) of baseline `a959e70b` and this branch, run one at a
+  time: baseline 3,527 s, `dist` 402.7 MB / 20,978 files, tarball 75.0 MB. Branch first build:
+  3,530 s, `dist` 441.6 MB / 24,648 files, tarball 86.5 MB, _larger_ than baseline.
+- Cause: `dist/state-retention/` held 6,009 files (63 MB) on the branch versus one file
+  (`voice-call.js`) on baseline. Voice Call was the only plugin with a state-retention Doctor
+  repair; with it gone the surface's entry map is empty, and tsdown's `resolveEntry` falls back
+  to `src/index.ts`, bundling the whole CLI there.
+- Fix: media group edit to `tsdown.config.ts` skips retained-doctor surfaces with no entries. The
+  runtime (`resolveRetainedDoctorPath`) looks files up per plugin and treats absence as no repair.
+- Rebuild: 3,534 s, `dist` 378.4 MB / 18,639 files (-6% vs baseline), tarball 71.2 MB (-5%).
+  Isolated Gateway with the lean profile: 6 plugins, 67 tools (exec, read, write, edit, browser,
+  automations, memory_search/get, web_fetch, web_search), doctor complete, RSS 1,667 MB.
+- The targeted tests for this change exposed nine test cases outside the bounded per-group set
+  that still named removed plugins (`test/scripts/bundled-plugin-build-entries.test.ts`,
+  `src/cli/update-cli/update-command-admit.test.ts`). Pruned through the script, plus an unused
+  helper and import. One pruned case ("Doctor-projected database targets are incompatible")
+  tests kept update admission but uses a Discord legacy config as its trigger; coverage lost.
+- Gates: `pnpm tsgo:all` pass, oxfmt clean, the six related test files pass. Commit `2a1eef9a`.
