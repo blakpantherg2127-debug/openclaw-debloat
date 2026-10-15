@@ -704,37 +704,6 @@ describe("candidate update admission", () => {
     },
   );
 
-  it.each([
-    { policy: "allowlist", verdict: "admit", exitCode: 0 },
-    { policy: "invalid-policy", verdict: "refuse", exitCode: 3 },
-  ])(
-    "$verdict plugin-owned legacy Discord DM config ($policy) without writing",
-    async ({ policy, verdict, exitCode }) => {
-      vi.stubEnv("OPENCLAW_DISABLE_BUNDLED_PLUGINS", undefined);
-      writeConfig({
-        plugins: { allow: ["discord"] },
-        channels: { discord: { dm: { policy, allowFrom: ["123456789"] } } },
-      });
-      const before = snapshotFiles();
-
-      await updateAdmitCommand(contextPath);
-
-      expect(readVerdict()).toMatchObject({
-        verdict,
-        ...(verdict === "admit"
-          ? {
-              reasons: [],
-              warnings: expect.arrayContaining([
-                { code: "config-warning", message: expect.stringContaining("legacy fields") },
-              ]),
-            }
-          : { reasons: [expect.objectContaining({ code: "invalid-config" })] }),
-      });
-      expect(process.exitCode).toBe(exitCode);
-      expect(snapshotFiles()).toEqual(before);
-    },
-  );
-
   it.each(["valid", "repairable"])(
     "refuses retired config that a selected older plugin considers %s",
     async (shape) => {
@@ -814,52 +783,6 @@ module.exports = {
       expect(fs.existsSync(resolveOpenClawStateSqlitePath())).toBe(false);
     },
   );
-
-  it("emits a parseable refusal when Doctor-projected database targets are incompatible", async () => {
-    vi.stubEnv("OPENCLAW_DISABLE_BUNDLED_PLUGINS", undefined);
-    writeConfig({
-      plugins: { allow: ["discord"] },
-      channels: { discord: { dm: { policy: "allowlist", allowFrom: ["123456789"] } } },
-    });
-    const checkSchemas = schemaPreflight.checkTargetDatabaseSchemasForContexts;
-    vi.spyOn(schemaPreflight, "checkTargetDatabaseSchemasForContexts").mockImplementation(
-      async (versions, contexts) => {
-        if (contexts.some(({ config }) => config.channels?.discord?.dmPolicy === "allowlist")) {
-          return {
-            incompatible: [
-              {
-                kind: "agent",
-                path: path.join(home, "projected-agent.sqlite"),
-                foundVersion: 99999,
-                supportedVersion: 1,
-                writerAppVersion: "9999.1.1",
-              },
-            ],
-            indeterminate: [],
-          };
-        }
-        return checkSchemas(versions, contexts);
-      },
-    );
-    const before = snapshotFiles();
-
-    await updateAdmitCommand(contextPath);
-
-    const verdict = readVerdict();
-    expect(verdict).toMatchObject({
-      verdict: "refuse",
-      reasons: [expect.objectContaining({ code: "database-schema-preflight" })],
-      warnings: [{ code: "config-warning", message: expect.stringContaining("legacy fields") }],
-    });
-    expect(verdict.facts.checks.filter(({ name }) => name === "database-schema")).toEqual([
-      { name: "database-schema", status: "refuse", detail: expect.any(String) },
-    ]);
-    expect(verdict.facts.checks.filter(({ name }) => name === "config")).toEqual([
-      { name: "config", status: "warn" },
-    ]);
-    expect(process.exitCode).toBe(3);
-    expect(snapshotFiles()).toEqual(before);
-  });
 
   it("validates plugin compatibility against the candidate despite inherited host identity", async () => {
     const pluginDir = path.join(home, "version-sensitive-plugin");

@@ -62,6 +62,24 @@ export const GROUPS = [
       "src/plugins/runtime-live-state-guardrails.test.ts",
     ],
     testCases: [
+      // Build-entry and update-admission fixtures that name removed channel plugins.
+      ["test/scripts/bundled-plugin-build-entries.test.ts", "emits %s/%s through its owning build"],
+      [
+        "test/scripts/bundled-plugin-build-entries.test.ts",
+        "keeps the Matrix packaged runtime shim in its package-owned build",
+      ],
+      [
+        "test/scripts/bundled-plugin-build-entries.test.ts",
+        "builds explicitly selected external plugins only for Docker",
+      ],
+      [
+        "src/cli/update-cli/update-command-admit.test.ts",
+        "$verdict plugin-owned legacy Discord DM config ($policy) without writing",
+      ],
+      [
+        "src/cli/update-cli/update-command-admit.test.ts",
+        "emits a parseable refusal when Doctor-projected database targets are incompatible",
+      ],
       ["src/agents/tools/message-tool-discovery.test.ts", "scheduled account discovery"],
       [
         "src/agents/tools/message-tool.scheduled-writes.test.ts",
@@ -252,6 +270,22 @@ export const GROUPS = [
         "line",
       ].map((id) => ["src/config/dead-config-keys.test.ts", `channels.${id}.`]),
     ],
+    edits: [
+      {
+        file: "test/scripts/bundled-plugin-build-entries.test.ts",
+        why: "drop the helper and import only the removed Discord/Matrix/Docker cases used",
+        apply: (text) =>
+          text
+            .replace(
+              "function expectNoPrefixMatches(values: string[], prefix: string) {\n  expect(values.filter((value) => value.startsWith(prefix))).toEqual([]);\n}\n\n",
+              "",
+            )
+            .replace(
+              'import { resolvePluginNpmRuntimeBuildPlan } from "../../scripts/lib/plugin-npm-runtime-build.mts";\n',
+              "",
+            ),
+      },
+    ],
   },
   {
     id: "providers",
@@ -317,6 +351,10 @@ export const GROUPS = [
     paths: [],
     testFiles: ["src/plugins/provider-model-routes.installed.test.ts"],
     testCases: [
+      [
+        "test/scripts/bundled-plugin-build-entries.test.ts",
+        "keeps OpenCode Go bundled until its companion artifact is available",
+      ],
       [
         "src/agents/tools/pdf-tool.model-config.test.ts",
         "selects a text-extraction model for $primary",
@@ -438,6 +476,14 @@ export const GROUPS = [
     ],
     testCases: [
       [
+        "test/scripts/bundled-plugin-build-entries.test.ts",
+        "includes the manifest-less runtime core support package in dist build entries",
+      ],
+      [
+        "test/scripts/bundled-plugin-build-entries.test.ts",
+        "packs the runtime core support package without requiring a plugin manifest",
+      ],
+      [
         "src/agents/tools/video-generate-tool.test.ts",
         "exposes video generation for an auth-backed video provider",
       ],
@@ -454,6 +500,51 @@ export const GROUPS = [
     testRows: [["src/plugins/bundled-plugin-categories.test.ts", 'pluginId: "google-meet"']],
     // Its only test covers the removed Voice Call setup migration.
     testFiles: ["src/plugins/setup-registry.migrations.test.ts"],
+    edits: [
+      {
+        // Voice Call was the only plugin with a state-retention Doctor repair. tsdown treats an
+        // empty entry as "use src/index.ts", which put a 63 MB copy of the CLI in
+        // dist/state-retention. The runtime resolves these files per plugin and tolerates absence.
+        file: "tsdown.config.ts",
+        why: "skip retained-doctor build surfaces that have no entries",
+        apply: (text) =>
+          text.replace(
+            `  ...["config-doctor", "state-retention"].map((surface) =>
+    nodeBuildConfig(
+      {
+        name: TSDOWN_UNIFIED_CONFIG_GROUP,
+        // Keep retained config repairs in their own graph: shared public SDK chunks
+        // otherwise pull state-migration exports into these pre-install artifacts.
+        entry: collectRetainedDoctorBuildEntries({ ...bundledPluginBuildInventory, surface }),
+        outDir: \`dist/\${surface}\`,
+        deps: unifiedDeps,
+      },
+      false,
+    ),
+  ),`,
+            `  ...["config-doctor", "state-retention"].flatMap((surface) => {
+    const entry = collectRetainedDoctorBuildEntries({ ...bundledPluginBuildInventory, surface });
+    // tsdown falls back to src/index.ts for an empty entry, which would bundle the whole CLI here.
+    if (Object.keys(entry).length === 0) {
+      return [];
+    }
+    return [
+      nodeBuildConfig(
+        {
+          name: TSDOWN_UNIFIED_CONFIG_GROUP,
+          // Keep retained config repairs in their own graph: shared public SDK chunks
+          // otherwise pull state-migration exports into these pre-install artifacts.
+          entry,
+          outDir: \`dist/\${surface}\`,
+          deps: unifiedDeps,
+        },
+        false,
+      ),
+    ];
+  }),`,
+          ),
+      },
+    ],
   },
   {
     id: "nodes",
