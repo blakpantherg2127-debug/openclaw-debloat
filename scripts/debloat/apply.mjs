@@ -272,6 +272,23 @@ export const GROUPS = [
     ],
     edits: [
       {
+        // Keeps the normalization coverage: Telegram is the kept channel; the iMessage alias
+        // no longer resolves because the iMessage plugin is gone.
+        file: "src/utils/message-channel.test.ts",
+        why: "check gateway channel normalization against the kept Telegram channel",
+        apply: (text) =>
+          text
+            .replace(
+              'expect(resolveGatewayMessageChannel("discord")).toBe("discord");',
+              'expect(resolveGatewayMessageChannel("telegram")).toBe("telegram");',
+            )
+            .replace('    expect(resolveGatewayMessageChannel(" imsg ")).toBe("imessage");\n', "")
+            .replace(
+              'expect(isDeliverableMessageChannel("discord")).toBe(true);',
+              'expect(isDeliverableMessageChannel("telegram")).toBe(true);',
+            ),
+      },
+      {
         file: "test/scripts/bundled-plugin-build-entries.test.ts",
         why: "drop the helper and import only the removed Discord/Matrix/Docker cases used",
         apply: (text) =>
@@ -589,52 +606,14 @@ export const GROUPS = [
     // Codex runtime (DEBLOAT_LOG.md 2.5).
     // agentsapi stays: the core session native-binding tests use it as their fixture harness
     // (22 of 34 cases fail without it) (DEBLOAT_LOG.md 2.5).
-    extensions: ["copilot", "acpx", "crabbox"],
+    // crabbox stays: the maintainer PR gates (scripts/pr-lib/gates.sh, pr-crabbox-gate-publisher,
+    // package-manifest's dist/crabbox-wrapper.js launcher) run through scripts/crabbox-wrapper,
+    // which imports the plugin's CLI runtime; ~25 tooling test files fail without it
+    // (DEBLOAT_LOG.md 3.2). The lean profile denies it at runtime.
+    extensions: ["copilot", "acpx"],
     testRows: [
       ["src/plugins/bundled-plugin-categories.test.ts", 'pluginId: "acpx"'],
       ["src/plugins/bundled-plugin-categories.test.ts", 'pluginId: "copilot"'],
-    ],
-    // Crabbox remote-testing tooling (wrapper, staging, source capsule) built on the plugin.
-    paths: [
-      "scripts/crabbox-remote-redact.mjs",
-      "scripts/crabbox-remote-redact.mts",
-      "scripts/crabbox-routing-policy.mts",
-      "scripts/crabbox-setup.mjs",
-      "scripts/crabbox-setup.mts",
-      "scripts/crabbox-source-capsule.mts",
-      "scripts/crabbox-source-mirror.mts",
-      "scripts/crabbox-source-receiver.mts",
-      "scripts/crabbox-staging-artifacts.mts",
-      "scripts/crabbox-staging-claims.mts",
-      "scripts/crabbox-staging-identity.mts",
-      "scripts/crabbox-staging-location.mts",
-      "scripts/crabbox-staging-provenance.mts",
-      "scripts/crabbox-staging-users.mts",
-      "scripts/crabbox-staging-witness.mts",
-      "scripts/crabbox-staging.mts",
-      "scripts/crabbox-untrusted-bootstrap.sh",
-      "scripts/crabbox-wrapper-providers.mts",
-      "scripts/crabbox-wrapper.mjs",
-      "scripts/crabbox-wrapper.mts",
-      ".crabbox.yaml",
-    ],
-    edits: [
-      {
-        // The Crabbox remote-testing wrapper imports the removed crabbox plugin.
-        file: "tsdown.config.ts",
-        why: "drop the crabbox-wrapper build entry",
-        apply: (text) =>
-          text.replace(/^[ \t]*"crabbox-wrapper": "scripts\/crabbox-wrapper\.mts",\n/mu, ""),
-      },
-      {
-        file: "package.json",
-        why: "drop the crabbox-wrapper package file and crabbox:* scripts",
-        apply: (text) =>
-          text.replace(
-            /^[ \t]*"(?:dist\/crabbox-wrapper\.js|crabbox:[a-z]+)"(?:: "[^"\n]*")?,\n/gmu,
-            "",
-          ),
-      },
     ],
   },
   {
