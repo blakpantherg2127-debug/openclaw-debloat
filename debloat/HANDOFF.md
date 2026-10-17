@@ -36,21 +36,38 @@ remaining failure is logged as pre-existing.
   (`Co-Authored-By`, `Claude-Session`) in commits.
 - Nothing installed globally; repo-local pnpm only.
 
-## Setup (Windows: use WSL2 Ubuntu; several suites assume POSIX)
+## Setup: Docker container (Windows host)
 
-```bash
-# Node 24 and pnpm 12.9.0 (corepack picks the version from package.json)
-node --version                     # must be v24.x
-corepack enable
-git clone https://github.com/blakpantherg2127-debug/openclaw-debloat.git
-cd openclaw-debloat && git checkout debloat/wip
-pnpm install --frozen-lockfile
-# Untouched baseline (fork main at a959e70b) as a sibling worktree
-git worktree add ../openclaw-baseline a959e70b
-(cd ../openclaw-baseline && pnpm install --frozen-lockfile)
+Docker Desktop runs Linux containers on its WSL2 backend; that backend gets half the host RAM by
+default. Give it more in `%UserProfile%\.wslconfig`, then restart Docker Desktop:
+
+```ini
+[wsl2]
+memory=26GB
+processors=16
 ```
 
-Keep the clone on the WSL filesystem (`~/...`), not `/mnt/c`; the suite is I/O-heavy.
+Keep the repo in a named Docker volume, not a bind mount from `C:\`: the suite does heavy file
+I/O and Windows bind mounts are many times slower. The container never sees `~/.openclaw` or the
+live Gateway.
+
+```bash
+docker volume create openclaw-debloat
+docker run -it --name openclaw-debloat --shm-size=2g -v openclaw-debloat:/work -w /work node:24-trixie bash
+# inside the container:
+apt-get update && apt-get install -y python3 procps git
+corepack enable
+git clone https://github.com/blakpantherg2127-debug/openclaw-debloat.git repo
+cd repo && git checkout debloat/wip
+pnpm install --frozen-lockfile
+# Untouched baseline (fork main at a959e70b) as a sibling worktree
+git worktree add ../baseline a959e70b
+(cd ../baseline && pnpm install --frozen-lockfile)
+```
+
+Later sessions: `docker start -ai openclaw-debloat`. The container runs as root, so
+root-only failures (`io.eacces`) appear on both trees and classify as pre-existing. In the steps
+below, `../baseline` is `../baseline`.
 
 ## Next steps
 
@@ -63,10 +80,10 @@ Keep the clone on the WSL filesystem (`~/...`), not `/mnt/c`; the suite is I/O-h
    Re-run the same command after any interruption; recorded shards are skipped.
    Results: `.artifacts/debloat/branch/results.tsv` and `shards/NNN.log`.
 3. **Classify failures:**
-   `python3 scripts/debloat/tools/fail-sheet.py --baseline ../openclaw-baseline > .artifacts/debloat/fail-sheet.jsonl`
+   `python3 scripts/debloat/tools/fail-sheet.py --baseline ../baseline > .artifacts/debloat/fail-sheet.jsonl`
    Make the list of failing files, then run them one at a time on both trees:
    `scripts/debloat/tools/run-files.sh . files.txt .artifacts/debloat/rerun-branch`
-   `scripts/debloat/tools/run-files.sh ../openclaw-baseline files.txt .artifacts/debloat/rerun-baseline`
+   `scripts/debloat/tools/run-files.sh ../baseline files.txt .artifacts/debloat/rerun-baseline`
    Fails on both = pre-existing (log it, don't fix). Fails only on the branch = debloat-caused.
 4. **Fix debloat-caused failures through `scripts/debloat/apply.mjs` only** (never by hand), so
    re-applying after an upstream sync reproduces them:
