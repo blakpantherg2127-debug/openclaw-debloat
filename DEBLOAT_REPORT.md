@@ -181,7 +181,7 @@ To bring a plugin back, remove it from `plugins.deny`, add it to `plugins.allow`
 ```bash
 git fetch upstream                         # https://github.com/openclaw/openclaw
 git checkout debloat/overnight
-git merge upstream/main                    # resolve modify/delete conflicts by keeping the deletion
+git merge upstream/main                    # keep the deletions on modify/delete conflicts, and keep this fork's README.md
 scripts/debloat/apply.sh                   # re-runs every group marked apply: true
 pnpm tsgo:all && pnpm build                # gates
 git add -A && git commit -m "debloat: re-apply after upstream sync"
