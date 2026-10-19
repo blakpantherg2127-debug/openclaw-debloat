@@ -34,8 +34,10 @@ plugins, and the Copilot and ACP harnesses. The full list, and what was kept on 
 
 ## Branches
 
-- `debloat/overnight`: this build.
-- `main`: an untouched mirror of upstream OpenClaw, kept clean so upstream changes merge in easily.
+- `debloat/overnight`: this build, and the default branch. Protected against force pushes and
+  deletion.
+- `main`: a frozen snapshot of upstream OpenClaw 2026.10.2 (`a959e70b`), the point this fork
+  started from. Kept for reference and not updated.
 
 ## Quick start
 
@@ -75,20 +77,21 @@ Remove it from `plugins.deny` in your config and add it to `plugins.allow`, then
 - for a plugin that is still in the tree, restart the Gateway;
 - for a removed one, also run `pnpm openclaw plugins install @openclaw/<id>`.
 
-## Staying in sync with upstream
+## Upstream
 
-Every removal is done by one script, `scripts/debloat/apply.sh`, so an upstream update is a merge
-and a re-run:
+This fork doesn't track upstream OpenClaw. It's based on OpenClaw 2026.10.2 and changes only when
+I change it.
 
-```bash
-git remote add upstream https://github.com/openclaw/openclaw.git   # once
-git fetch upstream
-git checkout debloat/overnight
-git merge upstream/main     # on conflicts: keep the deletions, and keep this README
-scripts/debloat/apply.sh    # re-applies every removal, prunes their tests, regenerates inventories
-pnpm tsgo:all && pnpm build
-git add -A && git commit -m "debloat: re-apply after upstream sync"
-```
+- Don't use GitHub's **Sync fork** button. Its "Discard commits" option would reset this branch to
+  upstream; the branch protection blocks that, and there is nothing to gain from it anyway.
+- Don't run `pnpm openclaw update`: it can replace this build with an upstream release. The lean
+  profile already turns off update checks at startup.
+- Upstream security fixes don't arrive on their own. When one matters for the features kept here,
+  it gets applied by hand, one fix at a time.
+
+If that ever changes: every removal is done by one script, `scripts/debloat/apply.sh`, so catching
+up with upstream is a merge plus a re-run. The steps are in
+[DEBLOAT_REPORT.md](DEBLOAT_REPORT.md#re-applying-after-an-upstream-sync).
 
 ## How it was checked
 

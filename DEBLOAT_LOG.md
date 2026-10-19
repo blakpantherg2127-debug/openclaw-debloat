@@ -380,4 +380,17 @@ of core files with no test proof possible here in reasonable time.
   allowed plugins load (anthropic, telegram, browser, duckduckgo, web-readability, memory-core),
   67 tools with none of the required ones missing, idle RSS 1,662 MB, doctor complete. Its only
   channel warning is Telegram rejecting the placeholder bot token (401), as expected.
-- Next: push for review (no push from the container; it has no GitHub login).
+- Commit `1e758f3`, pushed from a Windows clone (the container has no GitHub login) as a plain
+  fast-forward of `debloat/wip`. After review, `debloat/overnight` was fast-forwarded to it.
+
+### 3.3 Fork README and upstream policy
+
+- Replaced the upstream `README.md` with this fork's own: what is kept and removed, measured
+  savings, quick start with the lean profile, adding plugins back, and credit to OpenClaw under its
+  MIT license. Commit `877eede`. `debloat/overnight` became the repository's default branch, so
+  GitHub shows this README.
+- The fork does not track upstream. `main` stays at `a959e70b` (OpenClaw 2026.10.2) as a
+  reference. Ruleset "Protect debloat branches" blocks force pushes and deletion on
+  `debloat/overnight` and `debloat/wip` with no bypass, which also blocks GitHub's
+  "Sync fork → Discard commits". README and report say so; the re-apply steps stay documented in
+  case the decision changes.

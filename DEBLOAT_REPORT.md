@@ -178,6 +178,12 @@ To bring a plugin back, remove it from `plugins.deny`, add it to `plugins.allow`
 
 ## Re-applying after an upstream sync
 
+**This fork does not track upstream** (decided 2026-10-19, after Phase 3). `main` stays at
+`a959e70b` (OpenClaw 2026.10.2) as a reference, and upstream is not merged into
+`debloat/overnight`. A repository ruleset blocks force pushes and deletion on `debloat/overnight`
+and `debloat/wip`, which also blocks GitHub's "Sync fork → Discard commits". The steps below stay
+here in case that decision changes.
+
 ```bash
 git fetch upstream                         # https://github.com/openclaw/openclaw
 git checkout debloat/overnight
@@ -218,6 +224,10 @@ upstream fetch.
 
 ## Known risks
 
+- **No upstream updates.** The fork does not track upstream, so upstream security fixes do not
+  arrive on their own; each one that matters for the kept features has to be applied by hand.
+  Running `openclaw update` can replace this build with an upstream release; the lean profile
+  turns off update checks at startup.
 - **Config that names a removed plugin's feature fails validation.** For example,
   `tools.web.search.provider: "grok"`, `channels.discord`, or a removed provider's model ref will
   block Gateway startup until you edit the config or run `openclaw doctor --fix`. The lean profile
