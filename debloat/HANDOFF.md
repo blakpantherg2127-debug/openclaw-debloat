@@ -1,5 +1,10 @@
 # Debloat handoff: finish Phase 3 on a local machine
 
+**Status (2026-10-19):** steps 1-5 below are done and committed on `debloat/wip`; see
+[DEBLOAT_LOG.md](../DEBLOAT_LOG.md) 3.2. Every failing file is classified: debloat-caused ones are
+fixed through `apply.mjs`, the rest are logged as pre-existing. Left: push `debloat/wip`, then
+fast-forward `debloat/overnight` to it.
+
 Branch `debloat/wip` = `debloat/overnight` plus uncommitted work from the cloud run. Merge it
 back into `debloat/overnight` only once the full suite is classified and green, or every
 remaining failure is logged as pre-existing.

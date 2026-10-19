@@ -136,44 +136,6 @@ async function expectAuthPreflightError(
   expect(mocks.runNonInteractiveSetup).not.toHaveBeenCalled();
 }
 
-const localResetProviderCases = [{ providerId: "ollama", methodId: "local" }] as const;
-
-function mockLocalResetPreflight(params: {
-  providerId: (typeof localResetProviderCases)[number]["providerId"];
-  methodId: (typeof localResetProviderCases)[number]["methodId"];
-  validationResult: boolean;
-}) {
-  const validateNonInteractive = vi.fn(
-    async (ctx: ProviderAuthMethodNonInteractiveValidationContext) => {
-      if (!params.validationResult) {
-        ctx.runtime.error("Local provider preflight failed");
-        ctx.runtime.exit(1);
-      }
-      return params.validationResult;
-    },
-  );
-  const runNonInteractive = vi.fn(async () => ({}));
-
-  mocks.resolvePluginProviders.mockReturnValueOnce([
-    {
-      id: params.providerId,
-      label: params.providerId === "ollama" ? "Ollama" : "LM Studio",
-      auth: [
-        {
-          id: params.methodId,
-          label: "Local provider",
-          kind: "custom",
-          run: vi.fn(async () => ({ profiles: [] })),
-          runNonInteractive,
-          validateNonInteractive,
-        },
-      ],
-    },
-  ]);
-
-  return { runNonInteractive, validateNonInteractive };
-}
-
 describe("setupWizardCommand", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -729,60 +691,6 @@ describe("setupWizardCommand", () => {
     },
   );
 
-  it.each(
-    localResetProviderCases.map(({ providerId, methodId }, index) => ({
-      providerId,
-      methodId,
-      validationResult: index === 0,
-    })),
-  )(
-    "preflights $providerId before reset and setup (accepted: $validationResult)",
-    async (params) => {
-      const { providerId, validationResult } = params;
-      const runtime = makeRuntime();
-      const { runNonInteractive, validateNonInteractive } = mockLocalResetPreflight(params);
-      await setupWizardCommand(
-        { reset: true, nonInteractive: true, acceptRisk: true, authChoice: providerId },
-        runtime,
-      );
-      expect(runNonInteractive).not.toHaveBeenCalled();
-      expect(mocks.handleReset).toHaveBeenCalledTimes(validationResult ? 1 : 0);
-      expect(mocks.runNonInteractiveSetup).toHaveBeenCalledTimes(validationResult ? 1 : 0);
-      if (!validationResult) {
-        expect(validateNonInteractive).toHaveBeenCalledOnce();
-        expect(runtime.error).toHaveBeenCalledWith("Local provider preflight failed");
-        expect(runtime.exit).toHaveBeenCalledWith(1);
-        return;
-      }
-      expect(validateNonInteractive).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({
-          authChoice: providerId,
-          config: {},
-          baseConfig: {},
-          opts: expect.objectContaining({ reset: true, nonInteractive: true }),
-          runtime,
-        }),
-      );
-      const validationCall = validateNonInteractive.mock.invocationCallOrder.at(0);
-      const resetCall = mocks.handleReset.mock.invocationCallOrder.at(0);
-      const setupCall = mocks.runNonInteractiveSetup.mock.invocationCallOrder.at(0);
-      if (validationCall === undefined || resetCall === undefined || setupCall === undefined) {
-        throw new Error("Expected local provider validation, reset, and onboarding setup");
-      }
-      expect(validationCall).toBeLessThan(resetCall);
-      expect(resetCall).toBeLessThan(setupCall);
-    },
-  );
-
-  it("validates a provider-specific API key before reset", async () => {
-    vi.stubEnv("ANTHROPIC_API_KEY", "");
-    await expectAuthPreflightError(
-      { authChoice: "apiKey", tokenProvider: "anthropic", anthropicApiKey: "" },
-      () =>
-        `Missing --anthropic-api-key (or ANTHROPIC_API_KEY in env). Export ANTHROPIC_API_KEY, pass --anthropic-api-key, or run ${formatCliCommand("openclaw onboard")} for interactive setup.`,
-    );
-  });
-
   it("validates an inferred custom auth choice before reset", async () => {
     await expectAuthPreflightError({ customBaseUrl: "https://example.com/v1" }, () =>
       [
@@ -790,12 +698,6 @@ describe("setupWizardCommand", () => {
         "Use --custom-base-url and --custom-model-id.",
       ].join("\n"),
     );
-  });
-
-  it("rejects ambiguous interactive provider flags before reset", async () => {
-    const runtime = makeRuntime();
-    await setupWizardCommand({ reset: true, nvidiaApiKey: "n", openaiApiKey: "o" }, runtime);
-    expect(mocks.handleReset).not.toHaveBeenCalled();
   });
 
   it("validates custom credential storage before reset", async () => {

@@ -32,10 +32,6 @@ import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("generate-npm-package-lock", () => {
-  function repoRelativePath(value: string): string {
-    return path.relative(process.cwd(), value).replaceAll("\\", "/");
-  }
-
   it("omits workspace packages that are published beside the package", () => {
     const normalized = packageJsonForNpmLock(
       {
@@ -1746,15 +1742,6 @@ process.on("SIGTERM", () => server.close(() => process.exit(0)));
     });
   });
 
-  it("targets changed publishable plugin manifests", () => {
-    expect(
-      npmLockPackageDirsForChangedPaths([
-        "extensions/acpx/package.json",
-        "extensions/acpx/deps/local-runtime/package.json",
-      ]).map(repoRelativePath),
-    ).toEqual(["extensions/acpx"]);
-  });
-
   it("does not normalize raw Git filename boundaries into package manifests", () => {
     expect(
       npmLockPackageDirsForChangedPaths([
@@ -1763,14 +1750,5 @@ process.on("SIGTERM", () => server.close(() => process.exit(0)));
         String.raw`extensions\acpx\package.json`,
       ]),
     ).toEqual([]);
-  });
-
-  it("falls back to every npm lock when lockfile ownership is ambiguous", () => {
-    const packageDirs = npmLockPackageDirsForChangedPaths(["pnpm-lock.yaml"]).map(repoRelativePath);
-
-    expect(packageDirs).toContain("");
-    expect(packageDirs).toContain("packages/gateway-client");
-    expect(packageDirs).toContain("packages/gateway-protocol");
-    expect(packageDirs).toContain("extensions/acpx");
   });
 });

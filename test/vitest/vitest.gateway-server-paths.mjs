@@ -5,6 +5,7 @@ export const gatewayPluginTestFiles = [
   "test/plugins/browser-session-authority.gateway.test.ts",
   "test/plugins/chat-abort-codex.gateway.test.ts",
   "test/plugins/codex-model-catalog.gateway.test.ts",
+  "test/plugins/crabbox-allocation-authority.gateway.test.ts",
   "test/plugins/team-reports-http.gateway.test.ts",
 ];
 
@@ -143,7 +144,6 @@ export const gatewayDatabaseWorkerTestFiles = [
   "src/gateway/provider-browser-auth/persistence.integration.test.ts",
   "src/gateway/remote-control-ui-ingress.integration.test.ts",
   "src/gateway/remote-control-ui-ingress.test.ts",
-  "src/gateway/server-instance-runtime.approvals.test.ts",
   "src/gateway/server-methods/agent.create-event.test.ts",
   "src/gateway/server-methods/approval.legacy-authority.test.ts",
   "src/gateway/server-methods/approval.request-authority.test.ts",
@@ -170,14 +170,12 @@ export const gatewayDatabaseWorkerTestFiles = [
   "src/gateway/server-methods/models-list.freshness.integration.test.ts",
   "src/gateway/server-methods/models-list.membership.integration.test.ts",
   "src/gateway/server-methods/models-list.native-lifecycle.integration.test.ts",
-  "src/gateway/server-methods/models-list.remote-catalog.integration.test.ts",
   "src/gateway/server-methods/models-list.worker-recovery.integration.test.ts",
   "src/gateway/server-methods/models-manual-policy.integration.test.ts",
   "src/gateway/server-methods/native-hook-relay.test.ts",
   "src/gateway/server-methods/nodes.test.ts",
   "src/gateway/server-methods/projects.test.ts",
   "src/gateway/server-methods/requester-cron-authority.integration.test.ts",
-  "src/gateway/server-methods/send.scheduled-reads.integration.test.ts",
   "src/gateway/server-methods/server-methods.test.ts",
   "src/gateway/server-methods/session-catalog.performance.test.ts",
   "src/gateway/server-methods/session-creator-preparation.test.ts",
@@ -296,7 +294,6 @@ export const gatewayDatabaseWorkerTestFiles = [
   "src/gateway/sessions-history-http.model-policy.test.ts",
   "src/gateway/sessions-history-http.physical-source.test.ts",
   "src/gateway/sessions-resolve-store.test.ts",
-  "src/gateway/setup-inference.first-signin.integration.test.ts",
   "src/gateway/skill-library-authoring.test.ts",
   "src/gateway/startup-local-cli-pairing.test.ts",
   "src/gateway/talk/client-agent-consult.terminal-writes.test.ts",
@@ -325,7 +322,6 @@ export const gatewayDatabaseWorkerTestFiles = [
   "src/gateway/tools-invoke-authorization.test.ts",
   "src/gateway/tools-invoke-http.test.ts",
   "src/gateway/tui-session-description-wire.test.ts",
-  "src/gateway/update-run-notice-target.test.ts",
   "src/gateway/update-run-notice.test.ts",
   "src/gateway/user-profiles-http.auth.test.ts",
   "src/gateway/watch-node-http.test.ts",
@@ -593,7 +589,6 @@ export const gatewayServerIsolatedTestFiles = [
   "src/gateway/server.placement-abandonment.lifecycle.test.ts",
   "src/gateway/server.placement-abandonment.test.ts",
   "src/gateway/server.sessions.compaction-read-errors.test.ts",
-  "src/gateway/server.xai-fallback.test.ts",
 ];
 
 export const gatewayCoreTestInclude = ["src/gateway/**/*.test.ts"];

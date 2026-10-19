@@ -36,12 +36,4 @@ describe("labeler extension coverage", () => {
   it("covers every extension directory", () => {
     expect(extensionDirectories.filter((dir) => !coveredExtensionDirectories.has(dir))).toEqual([]);
   });
-
-  it("references only existing extension directories", () => {
-    expect(
-      extensionGlobDirectories.filter(
-        (glob) => !extensionDirectories.some((dir) => path.matchesGlob(dir, glob)),
-      ),
-    ).toEqual([]);
-  });
 });

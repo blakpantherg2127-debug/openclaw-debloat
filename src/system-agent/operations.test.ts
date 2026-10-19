@@ -254,62 +254,6 @@ describe("system agent operations", () => {
     }
   });
 
-  it("redacts plugin secrets and channel callback URLs with active metadata", async () => {
-    const authorization = "Bearer plugin-only-secret";
-    const callbackUrl = "https://gateway.example/webhook/synology?access_token=callback-secret";
-    const incomingUrl = "https://nas.example/webapi/entry.cgi?token=incoming-secret";
-    const config = {
-      plugins: {
-        entries: {
-          codex: { config: { appServer: { headers: { Authorization: authorization } } } },
-        },
-      },
-      channels: {
-        "synology-chat": {
-          incomingUrl,
-          webhookUrl: callbackUrl,
-          accounts: {
-            work: { incomingUrl, webhookUrl: callbackUrl },
-          },
-        },
-      },
-    };
-    mockConfig.setConfig(config);
-    setRuntimeConfigSnapshot(config, config);
-    const pluginMetadata = createSystemAgentPluginMetadataTestSnapshot(config);
-    try {
-      await pluginMetadata.run(async () => {
-        const output = await readConfigOutput(
-          "plugins.entries.codex.config.appServer",
-          "channels.synology-chat",
-        );
-        expect(output).toContain('"headers": "<redacted>"');
-        expect(output).not.toContain(authorization);
-
-        expect(output).toContain('"webhookUrl": "<redacted>"');
-        expect(output).toContain('"incomingUrl": "<redacted>"');
-        expect(output).not.toContain("callback-secret");
-        expect(output).not.toContain("incoming-secret");
-        expect(
-          describeSystemAgentPersistentOperation({
-            kind: "config-set",
-            path: "channels.synology-chat.accounts.work.webhookUrl",
-            value: callbackUrl,
-          }),
-        ).toBe("set config channels.synology-chat.accounts.work.webhookUrl to <redacted>");
-        expect(
-          describeSystemAgentPersistentOperation({
-            kind: "config-set",
-            path: "channels.synology-chat",
-            value: `{ webhookUrl: "${callbackUrl}" }`,
-          }),
-        ).toBe("set config channels.synology-chat to <redacted>");
-      });
-    } finally {
-      clearRuntimeConfigSnapshot();
-    }
-  });
-
   it.each([
     {
       agentId: "work",

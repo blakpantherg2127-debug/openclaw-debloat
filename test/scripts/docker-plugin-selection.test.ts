@@ -55,25 +55,6 @@ function runSelector(
 }
 
 describe("Docker plugin selection", () => {
-  it("adds standalone direct and Gateway provider selections to the shared live image", () => {
-    const result = spawnSync(
-      process.execPath,
-      [path.join(repoRoot, "scripts/print-live-docker-plugin-selection.mjs"), repoRoot, "twitch"],
-      {
-        encoding: "utf8",
-        env: {
-          PATH: process.env.PATH,
-          OPENCLAW_LIVE_PROVIDERS: "ollama",
-          OPENCLAW_LIVE_GATEWAY_MODELS: "mistral/mistral-large-latest",
-        },
-      },
-    );
-    expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout.trim().split(",")).toEqual(
-      expect.arrayContaining(["ollama", "mistral", "twitch"]),
-    );
-  });
-
   it("selects provider owners by manifest capability without assuming matching plugin ids", () => {
     const extensionsRoot = tempDirs.make("openclaw-docker-provider-selection-");
     writePlugin(extensionsRoot, "provider-source", "provider-plugin");

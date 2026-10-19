@@ -49,15 +49,6 @@ it.each([
     expectedSource: "auto",
     agentId: "main",
   },
-  {
-    name: "keeps ordinary OpenRouter ownership",
-    source: "user",
-    pin: "openrouter:default",
-    modelEndpoint: "https://openrouter.ai/api/v1",
-    expectedPin: "openrouter:default",
-    expectedSource: "user",
-    agentId: "main",
-  },
 ] as const)(
   "$name for a configured model endpoint before session mutation",
   async ({ source, pin, modelEndpoint, expectedPin, expectedSource, agentId }) => {

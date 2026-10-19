@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createMessageToolTurnAuthority } from "../agents/tools/message-tool-turn-authority.js";
 import {
-  isTrustedMessageActionTurnIngress,
   mintMessageActionTurnCapability,
   resolveMessageActionTurnAuthorization,
   resolveMessageActionTurnCapability,
@@ -67,14 +66,6 @@ describe("message action turn capability", () => {
     revokeMessageActionTurnCapability(token);
     expect(assertCurrent).toThrow("turn capability is no longer active");
     expect(assertSourceCurrent).toHaveBeenCalledOnce();
-  });
-
-  it("admits channel ingress but rejects Gateway and internal run sources", () => {
-    expect(isTrustedMessageActionTurnIngress("whatsapp")).toBe(true);
-    expect(isTrustedMessageActionTurnIngress("matrix")).toBe(true);
-    expect(isTrustedMessageActionTurnIngress("webchat")).toBe(false);
-    expect(isTrustedMessageActionTurnIngress("cron")).toBe(false);
-    expect(isTrustedMessageActionTurnIngress(undefined)).toBe(false);
   });
 
   it("resolves only for the exact admitted run identity", () => {

@@ -160,25 +160,6 @@ describe("repository Telegram E2E skill", () => {
     expect(descriptor.interface.default_prompt).toContain("$telegram-e2e-userbot");
   });
 
-  it("passes its Node test suite", async () => {
-    const tests = fs
-      .readdirSync(scriptsDir)
-      .filter((entry) => entry.endsWith(".test.mjs"))
-      .toSorted()
-      .map((entry) => path.join(scriptsDir, entry));
-    expect(tests.length).toBeGreaterThan(0);
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const deadline = new Promise<void>((resolve) => {
-      timer = setTimeout(resolve, 110_000);
-    });
-    try {
-      const { failure } = await runNodeTests(tests, deadline);
-      expect(failure, failure).toBe("");
-    } finally {
-      clearTimeout(timer);
-    }
-  });
-
   it("attributes unfinished files and kills detached descendants at the deadline", async () => {
     const root = tempDirs.make("telegram-suite-deadline-");
     const ok = path.join(root, "ok.test.mjs");

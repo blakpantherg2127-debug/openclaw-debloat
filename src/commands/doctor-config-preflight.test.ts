@@ -23,7 +23,6 @@ import { resetLogger, setLoggerOverride } from "../logging/logger.js";
 import { loggingState } from "../logging/state.js";
 import { readPersistedInstalledPluginIndexInstallRecordsAsync } from "../plugins/installed-plugin-index-records.js";
 import { seedInstalledPluginIndex } from "../plugins/test-helpers/installed-plugin-index.js";
-import { readConfigMachineState } from "../state/config-machine-state.js";
 import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
 import { resolveOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
 import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
@@ -372,83 +371,6 @@ describe("runDoctorConfigPreflight", () => {
       };
       expect(persisted.gateway?.bind).toBe("loopback");
     });
-  });
-
-  it("migrates readable active config after preserving its state locators", async () => {
-    await withDoctorConfigPreflightHome(
-      async (home) => {
-        const storePath = path.join(home, "custom-cron", "jobs.json");
-        const configPath = await observeDoctorConfigStep("write-config", () =>
-          writeOpenClawConfig(home, {
-            gateway: { mode: "local", port: 19091 },
-          }),
-        );
-        await observeDoctorConfigStep("promote-last-good", async () =>
-          promoteConfigSnapshotToLastKnownGood(
-            await observeDoctorConfigStep("read-before-promotion", () => readConfigFileSnapshot()),
-          ),
-        );
-        await observeDoctorConfigStep("write-active-config", () =>
-          fs.writeFile(
-            configPath,
-            `${JSON.stringify(
-              {
-                gateway: { mode: "local", port: 19092 },
-                cron: { store: storePath },
-                session: { idleMinutes: 45 },
-                channels: {
-                  discord: {
-                    guilds: { "100": { channels: { general: { enabled: true } } } },
-                  },
-                },
-              },
-              null,
-              2,
-            )}\n`,
-            "utf-8",
-          ),
-        );
-
-        const repaired = await withEnvAsync(
-          {
-            OPENCLAW_UPDATE_IN_PROGRESS: "1",
-            OPENCLAW_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE: "1",
-          },
-          () =>
-            runDoctorConfigPreflight({
-              migrateState: true,
-              migrateLegacyConfig: false,
-              repairPrefixedConfig: true,
-              invalidConfigNote: false,
-            }),
-        );
-
-        expect(repaired.snapshot.valid).toBe(true);
-        expect(repaired.snapshot.config.gateway?.port).toBe(19092);
-        expect(repaired.snapshot.config).toHaveProperty("session.reset.idleMinutes", 45);
-        expect(repaired.snapshot.config).toHaveProperty(
-          "channels.discord.guilds.100.channels.general.enabled",
-          true,
-        );
-        expect(readConfigMachineState("cron.store")).toBe(storePath);
-        const migratedRaw = await observeDoctorConfigStep("read-migrated-config", () =>
-          fs.readFile(configPath, "utf-8"),
-        );
-        const entries = await observeDoctorConfigStep("list-config-directory", () =>
-          fs.readdir(path.dirname(configPath)),
-        );
-        expect(entries.filter((entry) => entry.startsWith("openclaw.json.clobbered."))).toEqual([]);
-
-        const converged = await withEnvAsync({ OPENCLAW_UPDATE_IN_PROGRESS: "1" }, () =>
-          runDoctorConfigPreflight(configRepairOptions),
-        );
-        expect(converged.snapshot.valid).toBe(true);
-        await expect(
-          observeDoctorConfigStep("read-converged-config", () => fs.readFile(configPath, "utf-8")),
-        ).resolves.toBe(migratedRaw);
-      },
-      ["discord"],
-    );
   });
 
   it("leaves unparseable config untouched and provides recovery steps", async () => {

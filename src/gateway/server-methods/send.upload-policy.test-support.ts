@@ -59,7 +59,7 @@ export function registerSendUploadPolicyTests({
         getCommittedRuntimeConfig: () => ({ gateway: { uploads: { enabled } } }),
       } as GatewayRequestContext;
       const plugin = registerMessageActionPlugin({
-        id: "slack",
+        id: "telegram",
         registrySuffix: "client-upload-policy",
       });
       const invoke = async (
@@ -70,7 +70,7 @@ export function registerSendUploadPolicyTests({
           idempotencyKey?: string;
         } = {},
       ) => {
-        const sessionKey = "agent:main:slack:channel:C1";
+        const sessionKey = "agent:main:telegram:channel:C1";
         const client = options.trusted
           ? agentRuntimeClient(sessionKey)
           : { connect: { ...directCliClient().connect, scopes: ["operator.write"] } };
@@ -82,7 +82,7 @@ export function registerSendUploadPolicyTests({
               contentType: "text/plain",
             };
         const common = {
-          channel: "slack",
+          channel: "telegram",
           agentId: "main",
           ...(options.trusted ? { sessionKey } : {}),
           idempotencyKey: options.idempotencyKey ?? "client-upload-policy",
@@ -153,7 +153,7 @@ export function registerSendUploadPolicyTests({
         if (method === "send") {
           mocks.deliverOutboundPayloads.mockImplementation(async (params) => {
             await accepted(params);
-            return [{ channel: "slack", messageId: "accepted-upload" }];
+            return [{ channel: "telegram", messageId: "accepted-upload" }];
           });
         } else {
           const actual = await vi.importActual<
@@ -225,7 +225,7 @@ export function registerSendUploadPolicyTests({
           expect(firstRespondCall((await fixture.invoke(fresh)).respond)[0]).toBe(true);
           expect(
             [...fixture.context.dedupe.keys()].filter((key) => key.endsWith(":fresh-upload-key")),
-          ).toEqual([expect.stringContaining('["slack","secondary"]')]);
+          ).toEqual([expect.stringContaining('["telegram","secondary"]')]);
           expect(acceptedSend).toHaveBeenCalledTimes(2);
         } finally {
           restoreReplay?.();
@@ -323,7 +323,7 @@ export function registerSendUploadPolicyTests({
         } else {
           mocks.deliverOutboundPayloads.mockImplementationOnce(async (params) => {
             await send(params);
-            return [{ channel: "slack", messageId: "upload-accepted" }];
+            return [{ channel: "telegram", messageId: "upload-accepted" }];
           });
         }
         const request = fixture.invoke({

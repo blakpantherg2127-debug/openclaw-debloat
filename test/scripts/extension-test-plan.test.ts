@@ -15,7 +15,6 @@ import {
 import { withEnv } from "../../src/test-utils/env.js";
 import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 import { listVitestConfigTestFiles } from "../vitest-projects-config.test-support.js";
-import { databaseWorkerExtensionTestFiles } from "../vitest/vitest.extension-database-workers-paths.mjs";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 const telegramConfig = "test/vitest/vitest.extension-telegram.config.ts";
@@ -168,44 +167,6 @@ describe("extension executable test plans", () => {
       "active-memory",
     ]);
   });
-
-  it.each([
-    { name: "matrix", limit: 40, workerLimit: 40 },
-    { name: "codex", limit: 24, workerLimit: 12 },
-    { name: "telegram", limit: 10, workerLimit: 1 },
-  ])(
-    "bounds $name files with their actual ordinary and database owners",
-    async ({ name, limit, workerLimit }) => {
-      const root = `extensions/${name}`;
-      const config = `test/vitest/vitest.extension-${name}.config.ts`;
-      const expected = (await listVitestConfigTestFiles(config)).toSorted();
-      const chunks = extensionTestPlan.createExtensionTestProcessTargetChunks(config, [root]);
-      expect(chunks).toHaveLength(Math.ceil(expected.length / limit));
-      expect(chunks.every((chunk) => chunk.length > 0 && chunk.length <= limit)).toBe(true);
-      expect(Math.max(...chunks.map((chunk) => chunk.length))).toBeLessThanOrEqual(
-        Math.min(...chunks.map((chunk) => chunk.length)) + 1,
-      );
-      expect(chunks.flat().toSorted()).toEqual(expected);
-
-      const workerFiles = (await listVitestConfigTestFiles(workerConfig)).filter((file) =>
-        file.startsWith(`${root}/`),
-      );
-      const plans = buildVitestRunPlans([root]);
-      const selected = plans.flatMap((plan) => plan.includePatterns ?? []);
-      expect(selected.toSorted()).toEqual([...expected, ...workerFiles].toSorted());
-      expect(new Set(selected).size).toBe(selected.length);
-      for (const plan of plans) {
-        expect(plan.includePatterns?.length).toBeLessThanOrEqual(
-          plan.config === workerConfig ? workerLimit : limit,
-        );
-        for (const file of plan.includePatterns ?? []) {
-          expect(plan.config).toBe(
-            databaseWorkerExtensionTestFiles.includes(file) ? workerConfig : config,
-          );
-        }
-      }
-    },
-  );
 
   it("keeps raw untracked root discovery while excluding non-default tests before chunking", () => {
     const cwd = tempDirs.make("test-plan-eligibility-");

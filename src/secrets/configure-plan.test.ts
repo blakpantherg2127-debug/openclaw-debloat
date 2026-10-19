@@ -20,40 +20,6 @@ describe("secrets configure plan helpers", () => {
     buildConfigureCandidatesForScope({ config: {} as OpenClawConfig });
   });
 
-  it("builds configure candidates from supported configure targets", () => {
-    const config = {
-      talk: {
-        providers: {
-          [TALK_TEST_PROVIDER_ID]: {
-            apiKey: "plain", // pragma: allowlist secret
-          },
-        },
-      },
-      channels: {
-        telegram: {
-          botToken: "token", // pragma: allowlist secret
-        },
-        nostr: {
-          privateKey: "nostr-private-key", // pragma: allowlist secret
-        },
-      },
-    } as OpenClawConfig;
-
-    const candidates = buildConfigureCandidatesForScope({ config });
-    const paths = candidates.map((entry) => entry.path);
-    expect(paths).toContain(TALK_TEST_PROVIDER_API_KEY_PATH);
-    expect(paths).toContain("channels.telegram.botToken");
-    expect(paths).toContain("channels.nostr.privateKey");
-    expect(resolveConfigSecretTargetByPath(["channels", "nostr", "privateKey"])).toMatchObject({
-      entry: {
-        id: "channels.nostr.privateKey",
-        includeInPlan: true,
-        includeInConfigure: true,
-        includeInAudit: true,
-      },
-    });
-  });
-
   it("collects provider upserts and deletes", () => {
     const original = {
       secrets: {

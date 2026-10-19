@@ -157,27 +157,6 @@ afterEach(() => {
   resetPluginRuntimeStateForTest();
 });
 
-function createAccountPlugin(id: "slack" | "telegram", accountIds: string[]): ChannelPlugin {
-  return {
-    id,
-    meta: {
-      id,
-      label: id,
-      selectionLabel: id,
-      docsPath: `/channels/${id}`,
-      blurb: "test",
-    },
-    capabilities: { chatTypes: ["direct", "group"], media: true },
-    config: {
-      listAccountIds: () => accountIds,
-      inspectAccount: () => ({ enabled: true }),
-      resolveAccount: () => {
-        throw new Error("raw account credentials must not resolve during planning");
-      },
-    },
-  };
-}
-
 function createLegacySingleAccountPlugin(params: {
   id: "buzz";
   resolveAccount: ChannelPlugin["config"]["resolveAccount"];
@@ -291,49 +270,6 @@ describe("messageCommand", () => {
 
     expect(resolveCommandConfigWithSecrets).not.toHaveBeenCalled();
     expect(runMessageActionMock).not.toHaveBeenCalled();
-  });
-
-  it("scopes unqualified broadcast secrets to channels accepting the explicit account", async () => {
-    const slackPlugin = createAccountPlugin("slack", ["shared"]);
-    slackPlugin.config.isEnabled = vi.fn(() => {
-      throw new Error("runtime enablement must not receive inspection metadata");
-    });
-    const telegramPlugin = createAccountPlugin("telegram", ["default"]);
-    setActivePluginRegistry(
-      createTestRegistry([
-        { pluginId: "slack", source: "test", plugin: slackPlugin },
-        { pluginId: "telegram", source: "test", plugin: telegramPlugin },
-      ]),
-    );
-    testConfig = {
-      channels: {
-        slack: { accounts: { shared: { botToken: { $secret: "vault://slack/shared" } } } },
-        telegram: {
-          accounts: { default: { botToken: { $secret: "vault://telegram/default" } } },
-        },
-      },
-    };
-
-    await runMessageCommand({
-      action: "broadcast",
-      channel: "all",
-      target: undefined,
-      targets: ["slack:channel:ops", "telegram:123"],
-      accountId: "shared",
-    });
-
-    expect(getScopedChannelsCommandSecretTargets).toHaveBeenCalledWith({
-      config: testConfig,
-      channel: undefined,
-      channels: ["slack"],
-      accountId: "shared",
-    });
-    expect(readOnlyMessageActionCall().broadcastAccountPlan).toEqual({
-      accountId: "shared",
-      candidateChannels: ["slack", "telegram"],
-      secretChannels: ["slack"],
-    });
-    expect(slackPlugin.config.isEnabled).not.toHaveBeenCalled();
   });
 
   it("excludes unknown legacy-plugin accounts before account or secret resolution", async () => {

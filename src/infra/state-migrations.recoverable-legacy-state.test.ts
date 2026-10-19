@@ -8,10 +8,6 @@ import { expectDefined } from "@openclaw/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getAgentDir } from "../agents/config.js";
 import { resetPluginStateStoreForTests } from "../plugin-state/plugin-state-store.js";
-import {
-  coercePluginDoctorContractModule,
-  type PluginDoctorContractModule,
-} from "../plugins/doctor-contract-module.js";
 import { EMPTY_LEGACY_SESSION_SURFACES } from "../plugins/legacy-session-surfaces.types.js";
 import {
   closeOpenClawAgentDatabasesForTest,
@@ -28,7 +24,6 @@ import {
   createLegacyStateMigrationStepReceipt,
   throwIfDoctorStateMigrationRefused,
 } from "./state-migrations.messages.js";
-import { createPluginDoctorStateMigrationContext } from "./state-migrations.plugin-doctor-context.js";
 import { runLegacyMigrationPlans } from "./state-migrations.plugin-state.js";
 import type { MigrationMessages } from "./state-migrations.types.js";
 
@@ -52,83 +47,6 @@ afterEach(() => {
 });
 
 describe("recoverable legacy state", () => {
-  it.each([false, true])(
-    "keeps Discord cache cleanup advisory with retired state=%s",
-    async (retiredState) => {
-      await withOpenClawTestState({ label: "discord-cache-cleanup" }, async ({ stateDir, env }) => {
-        const discordDir = path.join(stateDir, "discord");
-        const sourcePath = path.join(discordDir, "command-deploy-cache.json");
-        const retiredPath = path.join(discordDir, "thread-bindings.json");
-        await fs.mkdir(discordDir, { recursive: true });
-        await fs.writeFile(sourcePath, "retired deploy hashes");
-        if (retiredState) {
-          await fs.writeFile(retiredPath, "{}");
-        }
-        const unlink = fsSync.unlinkSync;
-        vi.spyOn(fsSync, "unlinkSync").mockImplementation((target) => {
-          if (target === sourcePath) {
-            throw new Error("synthetic cache cleanup permission denied");
-          }
-          unlink(target);
-        });
-        const { stateMigrations } = coercePluginDoctorContractModule(
-          await vi.importActual<PluginDoctorContractModule>(
-            path.resolve("extensions/discord/doctor-contract-api.ts"),
-          ),
-        );
-        const params = {
-          config: {},
-          env,
-          stateDir,
-          oauthDir: path.join(stateDir, "credentials"),
-          context: createPluginDoctorStateMigrationContext({
-            pluginId: "discord",
-            env,
-            config: {},
-          }),
-        };
-
-        const migrate = async () => {
-          const receipts = [];
-          for (const migration of stateMigrations) {
-            if (await migration.detectLegacyState(params)) {
-              receipts.push(
-                migrationReceipt(migration.id, await migration.migrateLegacyState(params)),
-              );
-            }
-          }
-          return receipts;
-        };
-        const receipts = await migrate();
-        const warnings = receipts.flatMap((receipt) => receipt.warnings).join("\n");
-
-        await expect(fs.readFile(sourcePath, "utf8")).resolves.toBe("retired deploy hashes");
-        expect(warnings).toContain("Discord command deployment cache");
-        expect(warnings).toContain("synthetic cache cleanup permission denied");
-        expect(receipts).toContainEqual(
-          expect.objectContaining({ id: "discord-legacy-state", outcome: "warning" }),
-        );
-        if (retiredState) {
-          expect(() => throwIfDoctorStateMigrationRefused(receipts)).toThrow(
-            "Doctor stopped because a state migration refused",
-          );
-          expect(warnings).toContain(
-            `Discord retired model preferences and thread bindings uses a retired pre-July 2026 format: ${retiredPath}. Install OpenClaw 2026.9.5. Run openclaw doctor --fix before upgrading to latest. Retired files were left untouched.`,
-          );
-          await expect(fs.readFile(retiredPath, "utf8")).resolves.toBe("{}");
-        } else {
-          expect(() => throwIfDoctorStateMigrationRefused(receipts)).not.toThrow();
-          expect(warnings).toContain("openclaw doctor --fix");
-        }
-        vi.restoreAllMocks();
-        if (!retiredState) {
-          expect((await migrate()).flatMap((receipt) => receipt.warnings)).toEqual([]);
-          await expect(fs.stat(sourcePath)).rejects.toMatchObject({ code: "ENOENT" });
-        }
-      });
-    },
-  );
-
   it("keeps a shared source blocked when another cleanup owner does not opt in", async () => {
     await withOpenClawTestState({ label: "shared-cleanup-policy" }, async ({ stateDir }) => {
       const sourcePath = path.join(stateDir, "shared-cache.json");

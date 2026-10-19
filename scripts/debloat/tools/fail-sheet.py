@@ -13,14 +13,17 @@ gone = []
 if a.baseline:
     gone = sorted(set(os.listdir(f"{a.baseline}/extensions")) - set(os.listdir(f"{W}/extensions")), key=len, reverse=True)
 pat = re.compile(r"\b(" + "|".join(map(re.escape, gone)) + r")\b", re.I) if gone else None
+ansi = re.compile(r"\x1b\[[0-9;]*m")
 rows = {}
 for l in open(f"{O}/results.tsv"):
     i, rc, _, cfg = l.rstrip("\n").split("\t")
     if rc == "0":
         continue
-    text = open(f"{O}/shards/{int(i):03d}.log", errors="replace").read().split("\n")
+    text = ansi.sub("", open(f"{O}/shards/{int(i):03d}.log", errors="replace").read()).split("\n")
     for k, t in enumerate(text):
-        m = re.match(r"^ FAIL  \|[^|]+\| (\S+)(?: \[.*?\])?(?: > (.*))?$", t)
+        # Plain logs label the project "|name|"; colored logs pad the name with spaces instead,
+        # optionally followed by a pool name: "gateway-server (gateway-server-parallel)".
+        m = re.match(r"^ FAIL\s+(?:\|[^|]+\|\s*|[\w.:-]+(?: \([\w.:-]+\))?\s{2,})?(\S+)(?: \[.*?\])?(?: > (.*))?$", t)
         if not m:
             continue
         f, name = m.group(1), m.group(2) or ""

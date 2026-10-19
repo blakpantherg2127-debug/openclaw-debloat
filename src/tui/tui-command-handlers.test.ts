@@ -911,17 +911,6 @@ describe("tui command handlers", () => {
       message: "thinking set to high",
     },
     {
-      command: "/think on",
-      params: {
-        sessionInfo: {
-          modelProvider: "opencode-go",
-          model: "minimax-m3",
-          thinkingLevels: [],
-        },
-      },
-      patch: { key: "agent:main:main", thinkingLevel: "high" },
-    },
-    {
       command: "/verbose off",
       patch: { key: "agent:main:main", verboseLevel: "off" },
       result: { entry: { verboseLevel: "off" } },

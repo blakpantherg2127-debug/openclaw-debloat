@@ -26,7 +26,7 @@ afterEach(() => {
   closeOpenClawStateDatabaseForTest();
 });
 
-it.each(["current", "webhook-repair"] as const)(
+it.each(["current"] as Array<"current" | "webhook-repair">)(
   "preserves authored config during startup from %s",
   async (source) => {
     await withDoctorConfigPreflightHome(async (home) => {

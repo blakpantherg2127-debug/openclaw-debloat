@@ -3,10 +3,7 @@ import { resolveIsolatedVitestBuild } from "../../scripts/lib/vitest-isolated-bu
 
 describe("isolated Vitest build selection", () => {
   it.each([
-    ...[
-      "src/plugins/setup-registry.migrations.test.ts",
-      "src/plugins/source-checkout-runtime.test.ts",
-    ].map((file) => ({
+    ...["src/plugins/source-checkout-runtime.test.ts"].map((file) => ({
       args: ["--config", "test/vitest/vitest.unit-fast.config.ts", file],
       expected: { profile: "qaRuntime", privateQa: false },
     })),

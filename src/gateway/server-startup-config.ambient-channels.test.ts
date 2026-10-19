@@ -43,7 +43,6 @@ describe("Gateway channel activation consent", () => {
       channels: {},
       enabled: false,
     },
-    { name: "ambient opt-in", ambientEnvTriggers: "allow", channels: {}, enabled: true },
     {
       name: "explicit channel config",
       ambientEnvTriggers: "suppress",

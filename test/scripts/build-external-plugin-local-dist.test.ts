@@ -13,11 +13,7 @@ import {
   runBundledPluginAssetHooks,
 } from "../../scripts/bundled-plugin-assets.mts";
 import { copyBundledPluginMetadata } from "../../scripts/copy-bundled-plugin-metadata.mts";
-import {
-  collectRootPackageExcludedExtensionDirs,
-  collectSourceCheckoutPluginBuildEntries,
-  DOCKER_SELECTED_PLUGIN_BUILD_IDS_ENV,
-} from "../../scripts/lib/bundled-plugin-build-entries.mjs";
+import { DOCKER_SELECTED_PLUGIN_BUILD_IDS_ENV } from "../../scripts/lib/bundled-plugin-build-entries.mjs";
 import { BUILD_STAMP_FILE } from "../../scripts/lib/local-build-metadata-paths.mts";
 import { resolveBuildRequirement } from "../../scripts/run-node.mts";
 import { hasChannelPackageState } from "../../src/channels/plugins/package-state-probes.js";
@@ -741,54 +737,6 @@ fs.writeFileSync("assets/generated.txt", "generated asset");
     },
   );
 
-  it("selects every externalized first-party plugin behind a package exclusion", () => {
-    const packageDirs = listExternalPluginLocalDistPackageDirs();
-    const excludedPluginIds = collectRootPackageExcludedExtensionDirs();
-
-    expect(packageDirs).toEqual(
-      expect.arrayContaining([
-        "extensions/diffs",
-        "extensions/diffs-language-pack",
-        "extensions/discord",
-        "extensions/feishu",
-        "extensions/matrix",
-        "extensions/slack",
-        "extensions/sms",
-        "extensions/mxc",
-        "extensions/whatsapp",
-        "extensions/codex",
-        "extensions/diagnostics-otel",
-        "extensions/msteams",
-        "extensions/visitor-access",
-      ]),
-    );
-    expect(
-      packageDirs.every((packageDir) => excludedPluginIds.has(packageDir.split("/").at(-1) ?? "")),
-    ).toBe(true);
-  });
-
-  it("retains released optional outputs and respects private QA and bounded selectors", () => {
-    const env = { OPENCLAW_INCLUDE_OPTIONAL_BUNDLED: "0" };
-    const selected = collectSourceCheckoutPluginBuildEntries({ env });
-    expect(selected.some(({ id }) => id === "qa-lab")).toBe(false);
-    expect(selected.find(({ id }) => id === "msteams")).toMatchObject({
-      isolated: true,
-      runtimeExtension: ".cjs",
-    });
-    const privateQa = collectSourceCheckoutPluginBuildEntries({
-      env: { ...env, OPENCLAW_BUILD_PRIVATE_QA: "1" },
-    });
-    expect(privateQa.find(({ id }) => id === "qa-lab")).toMatchObject({
-      isolated: false,
-      runtimeExtension: ".js",
-    });
-    expect(
-      collectSourceCheckoutPluginBuildEntries({
-        env: { OPENCLAW_BUNDLED_PLUGIN_BUILD_IDS: "telegram" },
-      }).map(({ id }) => id),
-    ).toEqual(["telegram"]);
-  });
-
   it("agrees on Docker compiler, metadata, and readiness outputs without unselected excluded plugins", () => {
     const repoRoot = fs.realpathSync(tempDirs.make("openclaw-docker-plugin-format-"));
     const pluginIds = ["demo", "unselected", "packaged"];
@@ -909,17 +857,5 @@ fs.writeFileSync("assets/generated.txt", "generated asset");
         spawnSync: () => ({ status: 1 }),
       }),
     ).toEqual({ shouldBuild: false, reason: "clean" });
-  });
-
-  it("performs no writes when Docker owns the selected build", async () => {
-    await expect(
-      buildExternalPluginLocalDist({
-        env: {
-          ...process.env,
-          [DOCKER_SELECTED_PLUGIN_BUILD_IDS_ENV]: "slack,whatsapp",
-        },
-        logLevel: "silent",
-      }),
-    ).resolves.toMatchObject({ pluginDirs: [] });
   });
 });

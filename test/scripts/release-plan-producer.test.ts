@@ -14,12 +14,11 @@ import {
   writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { parse, stringify } from "yaml";
 import { collectClawHubPublishablePluginPackages } from "../../scripts/lib/plugin-clawhub-release.ts";
 import { collectPublishablePluginPackages } from "../../scripts/lib/plugin-npm-release.ts";
-import { collectExtensionPackageJsonCandidates } from "../../scripts/lib/plugin-publication-candidates.ts";
 import {
   canonicalReleasePlanLockJson,
   createReleasePlanLock,
@@ -1647,77 +1646,5 @@ mutateModule.syncBuiltinESMExports();
       expect(() => produceReleasePlan(params)).toThrow(/platform|release-publish-children/u);
     }
     expect(existsSync(sentinel)).toBe(false);
-  });
-
-  it("matches the exact current npm and ClawHub publisher inventories", () => {
-    const root = tempDirs.make("openclaw-release-plan-current-");
-    const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], {
-      cwd: resolve("."),
-      encoding: "utf8",
-    }).trim();
-    execFileSync("git", ["clone", "-q", "--shared", "--no-checkout", resolve("."), root]);
-    const candidates = collectExtensionPackageJsonCandidates();
-    const pluginMetadataPaths = candidates.flatMap(({ packageDir, readmeText }) => [
-      `${packageDir}/package.json`,
-      ...(readmeText === undefined ? [] : [`${packageDir}/README.md`]),
-    ]);
-    // Preserve the exact candidate commit without materializing runtime trees for fixture cleanup.
-    execFileSync("git", ["sparse-checkout", "set", "--no-cone", "--stdin"], {
-      cwd: root,
-      input: [
-        ".github/workflows/",
-        "packages/*/package.json",
-        ...pluginMetadataPaths,
-        ...TOOLING_CLOSURE,
-        ...TOOLING_ROOT_FILES,
-      ]
-        .map((path) => `/${path}`)
-        .join("\n"),
-    });
-    execFileSync("git", ["checkout", "-q", "--detach", candidateSha], { cwd: root });
-    copyToolingClosure(root);
-    const toolingSha = commit(root, "tooling overlay", { allowEmpty: true });
-    execFileSync("git", ["update-ref", "refs/heads/main", toolingSha], { cwd: root });
-    expect(candidateSha).not.toBe(toolingSha);
-    expect(existsSync(join(root, "src"))).toBe(false);
-    expect(collectExtensionPackageJsonCandidates(root)).toEqual(candidates);
-    expect(
-      readdirSync(join(root, "extensions"), { recursive: true, withFileTypes: true })
-        .filter((entry) => entry.isFile())
-        .map((entry) => relative(root, join(entry.parentPath, entry.name)).replaceAll("\\", "/"))
-        .toSorted(),
-    ).toEqual(pluginMetadataPaths.toSorted());
-
-    const plan = produceReleasePlan({
-      repoRoot: root,
-      intent: "main-qualification",
-      validationIntent: "main-weekly",
-      candidateSha,
-      candidateRef: candidateSha,
-      toolingSha,
-      toolingFullRef: "refs/heads/main",
-      runGh: () => JSON.stringify({ status: "identical" }),
-    });
-    const npmPackages = plan.inventory.packages.filter((entry) => entry.targets.includes("npm"));
-    const clawHubPackages = plan.inventory.packages.filter((entry) =>
-      entry.targets.includes("clawhub"),
-    );
-    const coreNpmPackages = [
-      "@openclaw/ai",
-      "@openclaw/gateway-client",
-      "@openclaw/gateway-protocol",
-      "openclaw",
-    ];
-    expect(npmPackages.map((entry) => entry.name).toSorted()).toEqual(
-      [
-        ...coreNpmPackages,
-        ...collectPublishablePluginPackages(root).map((plugin) => plugin.packageName),
-      ].toSorted(),
-    );
-    expect(clawHubPackages.map((entry) => entry.name).toSorted()).toEqual(
-      collectClawHubPublishablePluginPackages(root)
-        .map((plugin) => plugin.packageName)
-        .toSorted(),
-    );
   });
 });

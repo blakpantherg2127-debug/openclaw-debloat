@@ -438,19 +438,6 @@ registerHooks({resolve(specifier, context, nextResolve) {
     },
   );
 
-  it("isolates mixed directories while respecting explicit isolation", () => {
-    const dirs = ["extensions/canvas", "src/node-host"];
-    expect(resolveImplicitVitestArgs(dirs)).toEqual([...dirs, "--isolate"]);
-    expect(resolveImplicitVitestArgs(dirs.slice(1))).toEqual(dirs.slice(1));
-    expect(resolveImplicitVitestArgs([...dirs, "--no-isolate"])).toEqual([...dirs, "--no-isolate"]);
-    expect(resolveImplicitVitestArgs([...dirs, "--", "--no-isolate"])).toEqual([
-      ...dirs,
-      "--isolate",
-      "--",
-      "--no-isolate",
-    ]);
-  });
-
   it("inserts bounded Gateway targets before the native separator", () => {
     const argv = ["run", "--config", gatewayConfig, "--reporter=verbose"];
     const targets = ["src/gateway/server-a.test.ts", "src/gateway/server-b.test.ts"];

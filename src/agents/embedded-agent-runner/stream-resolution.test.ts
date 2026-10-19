@@ -126,7 +126,7 @@ describe("resolveEmbeddedAgentStream", () => {
     expect(currentStreamFn).not.toHaveBeenCalled();
   });
 
-  it.each(["amazon-bedrock", "amazon-bedrock-mantle"])(
+  it.each(["amazon-bedrock"])(
     "preserves the stable system cache boundary through the registered %s transport",
     async (providerId) => {
       const { default: plugin } = await loadBundledPluginFacade<{

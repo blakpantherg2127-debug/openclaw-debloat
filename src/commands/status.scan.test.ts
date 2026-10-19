@@ -1,5 +1,4 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA } from "../config/bundled-channel-config-metadata.generated.js";
 import type { OpenClawConfig } from "../config/types.js";
 import { createUnreachableGatewayProbe } from "./gateway-status/test-support.js";
 import { createSqliteWalHealth } from "./sqlite-wal-health.test-support.js";
@@ -12,7 +11,6 @@ import {
   createStatusScanSharedMocks,
   createStatusSummary,
   loadStatusScanModuleForTest,
-  withTemporaryEnv,
 } from "./status.scan.test-helpers.js";
 
 const mocks = {
@@ -76,29 +74,6 @@ function heartbeat(waitingForRoute: boolean) {
   return {
     defaultAgentId: "main",
     agents: [{ agentId: "main", enabled: true, every: "30m", everyMs: 1_800_000, waitingForRoute }],
-  };
-}
-
-function coldStartEnv(token?: string) {
-  const entries = GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA.filter(
-    (entry) => entry.configurable !== false,
-  );
-  const prefixes = entries.map(
-    (entry) => `${entry.channelId.replace(/[^a-z0-9]+/gi, "_").toUpperCase()}_`,
-  );
-  const keys = new Set(entries.flatMap((entry) => entry.channelEnvVars ?? []));
-  for (const key of Object.keys(process.env)) {
-    if (prefixes.some((prefix) => key.startsWith(prefix))) {
-      keys.add(key);
-    }
-  }
-  return {
-    ...Object.fromEntries([...keys].map((key) => [key, undefined])),
-    OPENCLAW_TWITCH_ACCESS_TOKEN: token,
-    TELEGRAM_BOT_TOKEN: undefined,
-    VITEST: undefined,
-    VITEST_POOL_ID: undefined,
-    NODE_ENV: undefined,
   };
 }
 
@@ -254,23 +229,6 @@ describe("status scans", () => {
       expect.objectContaining({ timeoutMs: 10_000, fetchGit: true, includeRegistry: true }),
     );
   });
-
-  it.each(["token"])(
-    "uses manifest environment credentials for cold-start JSON (%s)",
-    async (token) => {
-      await withTemporaryEnv(coldStartEnv(token), async () => {
-        await scanStatusJsonFast(createStatusGatewayProbeBudget(), {} as never);
-      });
-      expect(mocks.probeGateway).toHaveBeenCalledTimes(token ? 1 : 0);
-      if (token) {
-        expect(mocks.getUpdateCheckResult).toHaveBeenCalledWith(
-          expect.objectContaining({ fetchGit: false, includeRegistry: false }),
-        );
-      } else {
-        expect(mocks.getUpdateCheckResult).not.toHaveBeenCalled();
-      }
-    },
-  );
 
   describe("collectStatusScanOverview", () => {
     const sqliteWal = createSqliteWalHealth();

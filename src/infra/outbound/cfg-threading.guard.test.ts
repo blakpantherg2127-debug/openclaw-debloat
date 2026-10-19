@@ -146,12 +146,7 @@ function partitionExtensionEntrypoints(files: string[]): {
 }
 
 function listHighRiskRuntimeCfgFiles(): string[] {
-  return [
-    bundledPluginFile("telegram", "src/action-runtime.ts"),
-    bundledPluginFile("discord", "src/monitor/reply-delivery.ts"),
-    bundledPluginFile("discord", "src/monitor/thread-bindings.discord-api.ts"),
-    bundledPluginFile("discord", "src/monitor/thread-bindings.manager.ts"),
-  ];
+  return [bundledPluginFile("telegram", "src/action-runtime.ts")];
 }
 
 function extractOutboundBlock(source: string, file: string): string {

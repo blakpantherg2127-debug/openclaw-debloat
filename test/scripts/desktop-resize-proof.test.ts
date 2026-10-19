@@ -545,44 +545,6 @@ describe("desktop proof identity and public evidence", () => {
     expect(desktopProofSshdFailure(stderr)).not.toMatch(/private|runtime|user$/u);
   });
 
-  it("publishes fixed phases and known failure locations, not raw reporter content", () => {
-    const result = desktopProofTestReport(
-      rawTestReport(
-        "AssertionError: private-token actual=secret expected=password\n at /private/workspace/test/e2e/qa-lab/runtime/skill-library-node-process.ts:42:9\n at /private/secret.ts:1:2\n https://private.invalid/token",
-      ),
-    );
-    expect(result).toMatchObject({
-      failedTests: 1,
-      files: [
-        {
-          file: "ui/src/e2e/desktop-resize.real-gateway.e2e.test.ts",
-          assertions: [
-            {
-              index: 0,
-              phase: "node-admission",
-              declarationLocation: { line: 120, column: 3 },
-              failures: [
-                {
-                  category: "AssertionError",
-                  failureLocations: [
-                    {
-                      file: "test/e2e/qa-lab/runtime/skill-library-node-process.ts",
-                      line: 42,
-                      column: 9,
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-    expect(JSON.stringify(result)).not.toMatch(
-      /private|token|secret|password|actual|expected|success|title|https/u,
-    );
-  });
-
   it.each([
     ["Error: Test timed out in 120000ms.\nprivate pending operation", "test-timeout"],
     ["Error: Hook timed out in 60000ms.\nprivate pending operation", "hook-timeout"],

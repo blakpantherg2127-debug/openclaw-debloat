@@ -32,7 +32,6 @@ const DOCKER_RELEASE = ".github/workflows/docker-release.yml";
 const DOCKER_PREPARE = ".github/workflows/docker-release-prepare.yml";
 const UPDATE_MIGRATION = ".github/workflows/update-migration.yml";
 const PERFORMANCE = ".github/workflows/openclaw-performance.yml";
-const LIVE_BUILD = "scripts/test-live-build-docker.sh";
 const DOCKER_E2E_IMAGE_HELPER = "scripts/lib/docker-e2e-image.sh";
 const RELEASE_FILTER_VALIDATOR = resolve("scripts/github/validate-release-suite-filters.sh");
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
@@ -2231,52 +2230,6 @@ describe("release validation no-push transport", () => {
       expect(evaluate("finalize_github_release"), JSON.stringify(scenario)).toBe(scenario.finalize);
       expect(evaluate("finalize_github_release", '{"npm":{},"clawhub":{}}')).toBe(false);
       expect(evaluate("publish_docker", '{"npm":{},"clawhub":{}}')).toBe(scenario.publishDocker);
-    }
-  });
-
-  it("fails a missing required local live image before any registry pull", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-live-local-image-"));
-    const bin = join(root, "bin");
-    const calls = join(root, "docker.log");
-    try {
-      mkdirSync(bin);
-      writeFileSync(calls, "");
-      const docker = join(bin, "docker");
-      writeFileSync(
-        docker,
-        `#!/usr/bin/env bash
-set -euo pipefail
-printf '%s\\n' "$*" >> "$FAKE_DOCKER_LOG"
-if [[ "$1" == "image" && "$2" == "inspect" ]]; then
-  exit 1
-fi
-if [[ "$1" == "pull" ]]; then
-  exit 0
-fi
-exit 2
-`,
-      );
-      chmodSync(docker, 0o755);
-
-      const result = spawnSync("bash", [resolve(LIVE_BUILD)], {
-        encoding: "utf8",
-        env: {
-          ...process.env,
-          DOCKER_COMMAND_TIMEOUT: "5s",
-          FAKE_DOCKER_LOG: calls,
-          OPENCLAW_LIVE_IMAGE: "openclaw-live-test:required-local",
-          OPENCLAW_LIVE_REQUIRE_LOCAL_IMAGE: "1",
-          OPENCLAW_SKIP_DOCKER_BUILD: "1",
-          PATH: `${bin}:${process.env.PATH ?? ""}`,
-        },
-      });
-      expect(result.status).toBe(1);
-      expect(result.stderr).toContain(
-        "Required local live-test image not found: openclaw-live-test:required-local",
-      );
-      expect(readFileSync(calls, "utf8")).toBe("image inspect openclaw-live-test:required-local\n");
-    } finally {
-      rmSync(root, { force: true, recursive: true });
     }
   });
 

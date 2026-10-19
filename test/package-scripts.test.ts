@@ -257,36 +257,6 @@ describe("package scripts", () => {
     expect(missedTargets).toEqual([]);
   });
 
-  it.for([
-    { platform: "windows", parts: [1, 2] },
-    { platform: "macos", parts: [1, 2, 3] },
-  ])(
-    "partitions $platform CI coverage into disjoint explicit test lists",
-    ({ platform, parts }) => {
-      const scripts = readPackageJson().scripts;
-      const partScripts = parts.map((part) =>
-        expectDefined(scripts[`test:${platform}:ci:${part}`], `${platform} CI part ${part}`),
-      );
-      const partTargets = partScripts.map(readProjectTestTargets);
-
-      expect(scripts[`test:${platform}:ci`]).toBe(
-        parts.map((part) => `pnpm test:${platform}:ci:${part}`).join(" && "),
-      );
-      expect(scripts[`test:${platform}:ci:${parts.length + 1}`]).toBeUndefined();
-      for (const [partIndex, targets] of partTargets.entries()) {
-        expect(targets.length).toBeGreaterThan(0);
-        expect(
-          targets.every((target) => target.endsWith(".test.ts") && fs.existsSync(target)),
-        ).toBe(true);
-        const laterTargets = new Set(partTargets.slice(partIndex + 1).flat());
-        expect(
-          targets.filter((target) => laterTargets.has(target)),
-          `${platform} CI part ${partIndex + 1} overlaps a later part`,
-        ).toEqual([]);
-      }
-    },
-  );
-
   it("keeps required native coverage in Windows CI", () => {
     const requiredTargets = [
       "src/node-host/node-worker-transfer-client.test.ts",

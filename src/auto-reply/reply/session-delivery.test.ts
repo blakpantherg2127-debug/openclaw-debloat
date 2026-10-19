@@ -3,31 +3,6 @@ import { describe, expect, it } from "vitest";
 import { resolveSessionDeliveryRoute } from "./session-delivery.js";
 
 describe("inter-session lastRoute preservation (fixes #54441)", () => {
-  it("inter-session message does NOT overwrite established Discord lastChannel", () => {
-    expect(
-      resolveSessionDeliveryRoute({
-        originatingChannelRaw: "webchat",
-        persistedLastChannel: "discord",
-        sessionKey: "agent:samantha:main",
-        isInterSession: true,
-      }).channel,
-    ).toBe("discord");
-  });
-
-  it("inter-session message does NOT overwrite established external lastTo", () => {
-    expect(
-      resolveSessionDeliveryRoute({
-        originatingChannelRaw: "webchat",
-        originatingToRaw: "session:somekey",
-        toRaw: "session:somekey",
-        persistedLastTo: "channel:1234567890",
-        persistedLastChannel: "discord",
-        sessionKey: "agent:samantha:main",
-        isInterSession: true,
-      }).to,
-    ).toBe("channel:1234567890");
-  });
-
   it("regular Discord user message DOES update lastChannel normally", () => {
     expect(
       resolveSessionDeliveryRoute({

@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAccountListHelpers } from "../../channels/plugins/account-helpers.js";
 import * as legacyBindingRepair from "../../commands/doctor/shared/legacy-config-binding-repair.runtime.js";
 import type { runPostCorePluginConvergence } from "../../commands/doctor/shared/post-core-plugin-convergence.js";
-import { replaceConfigFile } from "../../config/config.js";
 import {
   createConfigIO,
   readConfigFileSnapshot,
@@ -100,11 +99,7 @@ vi.mock("./update-command-fresh-doctor.js", async (importOriginal) => ({
   }),
 }));
 
-import {
-  planLegacyConfigForUpdateChannel,
-  repairLegacyConfigForUpdateChannel,
-} from "../../commands/doctor/legacy-config-repair.js";
-import { applyLegacyCompatibilityStep } from "../../commands/doctor/shared/config-flow-steps.js";
+import { repairLegacyConfigForUpdateChannel } from "../../commands/doctor/legacy-config-repair.js";
 import { convergeUpdatePlugins } from "./update-command-convergence.js";
 import { updateFinalizeCommand } from "./update-command-finalize.js";
 import { updatePluginsAfterCoreUpdate } from "./update-command-plugins.js";
@@ -188,74 +183,6 @@ describe("update config provenance", () => {
       expect(await fs.readFile(configPath, "utf8")).toBe(original);
     });
   });
-
-  it.each(["update channel", "manual Doctor"])(
-    "preserves the historical account owner and narrower route through %s",
-    async (flow) => {
-      await withTempHome(async (home) => {
-        const stateDir = path.join(home, ".openclaw");
-        const configPath = path.join(stateDir, "openclaw.json");
-        vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
-        vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
-        const narrowerRoute = {
-          agentId: "research",
-          match: { channel: "discord", peer: { kind: "direct", id: "research-user" } },
-        };
-        await fs.mkdir(stateDir, { recursive: true });
-        await fs.writeFile(
-          configPath,
-          JSON.stringify({
-            gateway: { mode: "local", bind: "localhost" },
-            agents: { list: [{ id: "ops" }, { id: "research" }] },
-            channels: { discord: { accounts: { default: {} } } },
-            bindings: [narrowerRoute],
-          }),
-        );
-        resetConfigRuntimeState();
-        const { snapshot, writeOptions } = await createConfigIO({
-          pluginValidation: "skip",
-        }).readConfigFileSnapshotForWrite();
-        expect(snapshot.sourceConfigBeforeMigrations).toHaveProperty("agents.list", [
-          { id: "ops" },
-          { id: "research" },
-        ]);
-        if (flow === "update channel") {
-          const plan = planLegacyConfigForUpdateChannel(snapshot, writeOptions);
-          expect(plan).toBeDefined();
-          await repairLegacyConfigForUpdateChannel({
-            configSnapshot: snapshot,
-            plan,
-            configWriteOptions: writeOptions,
-            jsonMode: true,
-          });
-        } else {
-          const result = applyLegacyCompatibilityStep({
-            snapshot,
-            state: {
-              cfg: snapshot.sourceConfig,
-              candidate: snapshot.sourceConfig,
-              pendingChanges: false,
-              fixHints: [],
-            },
-            shouldRepair: true,
-            doctorFixCommand: "openclaw doctor --fix",
-          });
-          expect(result.state.pendingChanges).toBe(true);
-          await replaceConfigFile({
-            sourceConfig: result.state.candidate,
-            baseHash: snapshot.hash,
-            writeOptions: { ...writeOptions, auditOrigin: "doctor", skipOutputLogs: true },
-          });
-        }
-        const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
-        expect(persisted.bindings).toEqual([
-          narrowerRoute,
-          { agentId: "ops", match: { channel: "discord", accountId: "default" } },
-          { agentId: "ops", match: { channel: "discord", accountId: "*" } },
-        ]);
-      });
-    },
-  );
 
   it.each([
     { flow: "plugins", requestedChannel: undefined },

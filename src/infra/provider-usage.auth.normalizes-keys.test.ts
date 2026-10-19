@@ -170,22 +170,6 @@ describe("resolveProviderAuths key normalization", () => {
     );
   }
 
-  it("strips embedded CR/LF from env credentials", async () => {
-    expect(
-      await resolve(
-        ["zai", "minimax"],
-        {},
-        {
-          ZAI_API_KEY: "zai-\r\nkey",
-          MINIMAX_API_KEY: "mini-\r\nmax",
-        },
-      ),
-    ).toEqual([
-      { provider: "zai", token: "zai-key" },
-      { provider: "minimax", token: "mini-max" },
-    ]);
-  });
-
   it("normalizes both token and API-key profile candidates", async () => {
     authProfileMocks.store.profiles = {
       "minimax:default": { type: "token", provider: "minimax", token: "mini-\r\nmax" },

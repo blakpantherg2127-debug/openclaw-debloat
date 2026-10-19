@@ -55,18 +55,18 @@ export function registerSendSessionRoutingTests({
       await withOpenClawTestState({ scenario: "minimal" }, async () => {
         setRuntimeConfigSnapshot({});
         const mirror = "agent:main:main";
-        const destination = "agent:main:slack:channel:c1";
+        const destination = "agent:main:telegram:channel:c1";
         mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
           sessionKey: destination,
           baseSessionKey: destination,
           peer: { kind: "channel", id: "c1" },
           chatType: "channel",
-          from: "slack:channel:C1",
+          from: "telegram:channel:C1",
           to: "channel:C1",
         });
         mocks.ensureOutboundSessionEntry.mockImplementationOnce(persistRoute);
         mocks.deliverOutboundPayloads.mockImplementationOnce(async (delivery) => {
-          const result = { channel: "slack" as const, messageId: "first-contact" };
+          const result = { channel: "telegram" as const, messageId: "first-contact" };
           await delivery.onDeliveryResult?.(result);
           await mirrorDeliveredPayloads({
             delivery,
@@ -88,7 +88,7 @@ export function registerSendSessionRoutingTests({
         const { respond } = await runSend({
           to: "channel:C1",
           message: "First contact",
-          channel: "slack",
+          channel: "telegram",
           sessionKey: mirror,
           idempotencyKey: "first-contact-mirror",
         });
@@ -103,7 +103,7 @@ export function registerSendSessionRoutingTests({
         }
         expect(loadSessionEntry({ sessionKey: destination })?.delivery).toMatchObject({
           kind: "external",
-          context: { channel: "slack", to: "channel:C1" },
+          context: { channel: "telegram", to: "channel:C1" },
         });
         expect(
           await loadTranscriptEvents({
@@ -133,12 +133,12 @@ export function registerSendSessionRoutingTests({
     {
       name: "WebChat transcript",
       mirror: "agent:main:dashboard:send-mirror",
-      destination: "agent:main:slack:channel:c1",
+      destination: "agent:main:telegram:channel:c1",
     },
     {
       name: "main transcript",
       mirror: "agent:main:main",
-      destination: "agent:main:slack:channel:c1",
+      destination: "agent:main:telegram:channel:c1",
     },
     { name: "shared main destination", mirror: "agent:main:main", destination: "agent:main:main" },
   ])(
@@ -150,14 +150,14 @@ export function registerSendSessionRoutingTests({
         baseSessionKey: destination,
         peer: { kind: "channel", id: "c1" },
         chatType: "channel",
-        from: "slack:channel:C1",
+        from: "telegram:channel:C1",
         to: "channel:C1",
       });
 
       const { respond } = await runSend({
         to: "channel:C1",
         message: "Requested external update",
-        channel: "slack",
+        channel: "telegram",
         sessionKey: mirror,
         idempotencyKey: "idem-route-owner",
       });
@@ -173,16 +173,16 @@ export function registerSendSessionRoutingTests({
     },
   );
 
-  it("updates mirror session keys and delivery thread ids when Slack routing derives a thread", async () => {
-    registerMessageThreadAddressingPlugin("slack");
+  it("updates mirror session keys and delivery thread ids when Telegram routing derives a thread", async () => {
+    registerMessageThreadAddressingPlugin("telegram");
     mockDeliverySuccess("m-thread-derived");
     mocks.getChannelPlugin.mockReturnValueOnce(undefined);
     mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
-      sessionKey: "agent:main:slack:channel:c1:thread:1710000000.9999",
-      baseSessionKey: "agent:main:slack:channel:c1",
+      sessionKey: "agent:main:telegram:channel:c1:thread:1710000000.9999",
+      baseSessionKey: "agent:main:telegram:channel:c1",
       peer: { kind: "channel", id: "c1" },
       chatType: "channel",
-      from: "slack:channel:C1",
+      from: "telegram:channel:C1",
       to: "channel:C1",
       threadId: "1710000000.9999",
     });
@@ -190,31 +190,31 @@ export function registerSendSessionRoutingTests({
     await runSend({
       to: "channel:C1",
       message: "threaded",
-      channel: "slack",
-      sessionKey: "agent:main:slack:channel:c1",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:channel:c1",
       idempotencyKey: "idem-thread-derived",
     });
 
     expect(ensureSessionEntryCall()?.route?.sessionKey).toBe(
-      "agent:main:slack:channel:c1:thread:1710000000.9999",
+      "agent:main:telegram:channel:c1:thread:1710000000.9999",
     );
-    expect(ensureSessionEntryCall()?.route?.baseSessionKey).toBe("agent:main:slack:channel:c1");
+    expect(ensureSessionEntryCall()?.route?.baseSessionKey).toBe("agent:main:telegram:channel:c1");
     expect(ensureSessionEntryCall()?.route?.threadId).toBe("1710000000.9999");
     expect(deliveryCall()?.threadId).toBe("1710000000.9999");
     expect(deliveryCall()?.mirror?.sessionKey).toBe(
-      "agent:main:slack:channel:c1:thread:1710000000.9999",
+      "agent:main:telegram:channel:c1:thread:1710000000.9999",
     );
   });
 
-  it("preserves the provided session when Slack derives a thread for a different base session", async () => {
-    registerMessageThreadAddressingPlugin("slack");
+  it("preserves the provided session when Telegram derives a thread for a different base session", async () => {
+    registerMessageThreadAddressingPlugin("telegram");
     mockDeliverySuccess("m-thread-mismatch");
     mocks.resolveOutboundSessionRoute.mockResolvedValueOnce({
-      sessionKey: "agent:main:slack:channel:c2:thread:1710000000.9999",
-      baseSessionKey: "agent:main:slack:channel:c2",
+      sessionKey: "agent:main:telegram:channel:c2:thread:1710000000.9999",
+      baseSessionKey: "agent:main:telegram:channel:c2",
       peer: { kind: "channel", id: "c2" },
       chatType: "channel",
-      from: "slack:channel:C2",
+      from: "telegram:channel:C2",
       to: "channel:C2",
       threadId: "1710000000.9999",
     });
@@ -222,14 +222,14 @@ export function registerSendSessionRoutingTests({
     await runSend({
       to: "channel:C2",
       message: "threaded",
-      channel: "slack",
-      sessionKey: "agent:main:slack:channel:c1",
+      channel: "telegram",
+      sessionKey: "agent:main:telegram:channel:c1",
       threadId: "1710000000.9999",
       idempotencyKey: "idem-thread-mismatch",
     });
 
     expect(deliveryCall()?.threadId).toBe("1710000000.9999");
-    expect(deliveryCall()?.session?.key).toBe("agent:main:slack:channel:c1");
-    expect(deliveryCall()?.mirror?.sessionKey).toBe("agent:main:slack:channel:c1");
+    expect(deliveryCall()?.session?.key).toBe("agent:main:telegram:channel:c1");
+    expect(deliveryCall()?.mirror?.sessionKey).toBe("agent:main:telegram:channel:c1");
   });
 }

@@ -11,22 +11,6 @@ describe("collectRuntimeChannelCapabilities", () => {
     expect(collectRuntimeChannelCapabilities({ channel: "heartbeat" })).toBeUndefined();
   });
 
-  it("adds thread-bound spawn capabilities when the channel account allows unified spawns", () => {
-    const capabilities = collectRuntimeChannelCapabilities({
-      channel: "discord",
-      accountId: "default",
-      cfg: {
-        session: {
-          threadBindings: {
-            spawnSessions: true,
-          },
-        },
-      },
-    });
-
-    expect(capabilities).toEqual(["threadbound-subagent-spawn", "threadbound-acp-spawn"]);
-  });
-
   it("omits thread-bound spawn capabilities when unified spawns are disabled", () => {
     const capabilities = collectRuntimeChannelCapabilities({
       channel: "discord",

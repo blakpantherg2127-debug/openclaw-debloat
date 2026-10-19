@@ -49,28 +49,6 @@ describe("android screenshots script", () => {
     expect(result.stdout).not.toContain(`Android screenshot artifacts: ${process.env.HOME}\n`);
   });
 
-  it("keeps fixture readiness and device restoration aligned", () => {
-    const script = readFileSync(SCRIPT, "utf8");
-    const fixture = readFileSync(
-      "apps/android/app/src/main/java/ai/openclaw/app/AndroidScreenshotFixture.kt",
-      "utf8",
-    );
-    const chatReady = "The Android release is close.";
-
-    expect(fixture).toContain(chatReady);
-    expect(script).toContain(`chat) printf '%s\\n' "${chatReady}"`);
-    for (const marker of [
-      'shell wm density "$ORIGINAL_WM_DENSITY"',
-      "shell wm density reset",
-      'shell cmd alarm set-timezone "$ORIGINAL_TIME_ZONE"',
-      'shell cmd time_zone_detector set_auto_detection_enabled "$ORIGINAL_AUTO_TIME_ZONE"',
-      "com.google.android.wearable.sysui:id/charging_container",
-      "shell input keyevent 4",
-    ]) {
-      expect(script).toContain(marker);
-    }
-  });
-
   it("rejects a physical device selected during screenshot discovery", () => {
     const root = tempDirs.make("openclaw-android-screenshot-adb-");
     const script = copyScreenshotScript(root);

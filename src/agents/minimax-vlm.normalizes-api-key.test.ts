@@ -118,11 +118,6 @@ describe("minimaxUnderstandImage apiKey normalization", () => {
   describe("SSRF policy", () => {
     it.each([
       {
-        name: "pins a default hostname without broad private-network access",
-        input: { apiHost: "https://api.minimax.io" },
-        policy: { hostnameAllowlist: ["api.minimax.io"] },
-      },
-      {
         name: "preserves an explicitly configured loopback origin",
         input: { apiHost: "https://localhost:8080" },
         policy: {

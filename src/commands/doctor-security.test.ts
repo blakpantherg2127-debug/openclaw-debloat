@@ -2,7 +2,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 import type { OpenClawConfig } from "../config/config.js";
 import type { OpenClawConfigWithLegacyRoster } from "../config/legacy.roster.js";
 import { REDACTED_SENTINEL } from "../config/redact-snapshot.js";
@@ -400,89 +399,6 @@ describe("noteSecurityWarnings gateway exposure", () => {
       expect(message).toContain('Heartbeat agent "ops"');
       expect(message).toContain(testCase.path);
       expect(message).toContain("direct/DM targets by default");
-    },
-  );
-
-  it.each([{ channel: "discord", label: "Discord" }])(
-    "keeps intentional $label open groupPolicy advisory in Doctor and update lint",
-    async ({ channel, label }) => {
-      const { loadBundledPluginFacade } =
-        await import("../test-utils/bundled-plugin-public-surface.js");
-      const channelPlugin =
-        channel === "discord"
-          ? (
-              await loadBundledPluginFacade<{ discordPlugin: ChannelPlugin }>({
-                pluginId: "discord",
-                artifactBasename: "api.js",
-              })
-            ).discordPlugin
-          : (
-              await loadBundledPluginFacade<{ feishuPlugin: ChannelPlugin }>({
-                pluginId: "feishu",
-                artifactBasename: "api.js",
-              })
-            ).feishuPlugin;
-      const { createCoreHealthChecks } = await import("../flows/doctor-core-checks.js");
-      const { exitCodeFromFindings } = await import("../flows/doctor-lint-flow.js");
-
-      pluginRegistry.list = [
-        {
-          id: channel,
-          meta: { label },
-          config: {
-            listAccountIds: () => ["default"],
-            resolveAccount: channelPlugin.config.resolveAccount,
-            isEnabled: () => true,
-            isConfigured: () => true,
-          },
-          security: {
-            collectWarnings: channelPlugin.security?.collectWarnings,
-          },
-        },
-      ];
-
-      const cfg: OpenClawConfig = {
-        channels: {
-          [channel]: {
-            groupPolicy: "open",
-            ...(channel === "feishu" ? { appId: "cli_test", appSecret: "test-secret" } : {}),
-          },
-        },
-      };
-
-      const plainFindings = await noteSecurityWarnings(cfg);
-
-      const securityCheck = createCoreHealthChecks().find(
-        (check) => check.id === "core/doctor/security",
-      );
-      expect(securityCheck).toBeDefined();
-
-      const healthFindings = await securityCheck!.detect({
-        mode: "lint",
-        runtime: { log() {}, error() {}, exit() {} },
-        cfg,
-      });
-      expect(exitCodeFromFindings(healthFindings, "error")).toBe(0);
-      expect(
-        plainFindings.filter((finding) => finding.detail.includes('groupPolicy="open"')),
-      ).toEqual([expect.objectContaining({ severity: "warn" })]);
-      expect(lastMessage()).toContain("openclaw security audit --deep");
-
-      const openGroupFindings = healthFindings.filter((finding) =>
-        finding.message.includes('groupPolicy="open"'),
-      );
-      expect(openGroupFindings).toEqual([
-        expect.objectContaining({
-          checkId: "core/doctor/security",
-          severity: "warning",
-          message: expect.stringContaining(`${label} security warning`),
-        }),
-      ]);
-      expect(openGroupFindings.some((finding) => finding.severity === "error")).toBe(false);
-
-      // Candidate update lint uses --severity-min error; the advisory must remain visible under warning.
-      expect(exitCodeFromFindings(openGroupFindings, "error")).toBe(0);
-      expect(exitCodeFromFindings(openGroupFindings, "warning")).toBe(1);
     },
   );
 });

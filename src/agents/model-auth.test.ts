@@ -765,23 +765,6 @@ describe("resolveApiKeyForProviderCore", () => {
       mode: "api-key",
     });
   });
-
-  it("prefers non-secret local env markers over ambient profiles", async () => {
-    const resolved = await withEnvAsync({ OLLAMA_API_KEY: "ollama-local" }, () =>
-      resolveAuth({
-        provider: "ollama",
-        store: authStore({
-          "ollama:default": keyCredential("ollama", "ollama-cloud-profile"),
-        }),
-      }),
-    );
-
-    expectAuthFields(resolved, {
-      apiKey: "ollama-local",
-      mode: "api-key",
-    });
-    expect(resolved.source).toContain("OLLAMA_API_KEY");
-  });
 });
 
 describe("resolveApiKeyForProviderCore – synthetic local auth for custom providers", () => {

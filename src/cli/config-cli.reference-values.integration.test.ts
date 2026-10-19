@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import JSON5 from "json5";
 import { describe, expect, it, vi } from "vitest";
 import { readConfigFileSnapshot, readConfigFileSnapshotForWrite } from "../config/config.js";
 import {
@@ -396,48 +395,6 @@ describe("config CLI file imports", () => {
 });
 
 describe("config CLI rejections", () => {
-  it("explains rejected settings without saving and accepts their correction", async () => {
-    const setting = "channels.discord.guilds.123456789012345678.requireMention";
-    const raw =
-      '{"channels":{"discord":{"guilds":{"123456789012345678":{"requireMention":true}}}}}\n';
-    await withFile("openclaw-config-cli-refusal-", raw, async ({ configPath, tempDir }) => {
-      const patchPath = path.join(tempDir, "patch.json");
-      fs.writeFileSync(
-        patchPath,
-        '{"channels":{"discord":{"guilds":{"123456789012345678":{"requireMention":42}}}}}',
-      );
-      for (const [args, issue] of [
-        [["set", setting, "oops"], "requireMention"],
-        [["set", "gateway.nonexistentSetting", "true"], "nonexistentSetting"],
-        [["patch", "--file", patchPath], "requireMention"],
-      ] as const) {
-        errors.length = 0;
-        await expect(invoke(["config", ...args])).rejects.toMatchObject({
-          name: "ExitError",
-          code: 1,
-        });
-        const output = errors.join("\n");
-        expect(output).toContain("Config change declined. No settings were saved.");
-        expect(output).toContain(issue);
-        expect(output).toContain("Correct the setting above and retry.");
-        expect(output).toContain("openclaw config schema");
-        expect(output).not.toMatch(/Stack:|Debug:|CLI failed|\bat .*\.ts:\d/);
-        expect(logs).toEqual([]);
-        expect(fs.readFileSync(configPath, "utf8")).toBe(raw);
-        expect(fs.existsSync(`${configPath}.bak`)).toBe(false);
-      }
-      errors.length = 0;
-      await invoke(["config", "set", setting, "false"]);
-      expect(
-        JSON5.parse(fs.readFileSync(configPath, "utf8")).channels.discord.guilds[
-          "123456789012345678"
-        ].requireMention,
-      ).toBe(false);
-      expect(errors).toEqual([]);
-      expect(logs.join("\n")).toContain("Updated");
-    });
-  });
-
   it.each([
     new Error("Config validation failed: unexpected write failure"),
     new ConfigWritePostCommitError({

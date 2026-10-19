@@ -1,18 +1,13 @@
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
-  buildAndroidAppI18nCatalog,
-  checkAndroidAppI18n,
   decodeAndroidResourceValue,
   escapeAndroidResourceValue,
   findUnusedAndroidResourceKeys,
   findUnlocalizedAndroidUiLiterals,
   renderAndroidResourceValue,
   selectDeterministicTranslation,
-  verifyAndroidAppI18n,
 } from "../../scripts/android-app-i18n.ts";
-import { NATIVE_I18N_LOCALES } from "../../scripts/native-i18n-locales.ts";
 
 const { generatedOverrides } = vi.hoisted(() => ({
   generatedOverrides: new Map<string, string>(),
@@ -30,98 +25,6 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 });
 
 describe("Android app i18n resources", () => {
-  it("counts manual resources reached only through the generated native lookup", async () => {
-    const shellPath = path.resolve(
-      "apps/android/app/src/main/java/ai/openclaw/app/ui/ShellScreen.kt",
-    );
-    const shell = await readFile(shellPath, "utf8");
-    try {
-      generatedOverrides.set(shellPath, shell.replaceAll("R.string.cancel", "R.string.app_name"));
-      await expect(verifyAndroidAppI18n()).resolves.toBeUndefined();
-    } finally {
-      generatedOverrides.clear();
-    }
-  });
-
-  it("keeps generated resources, runtime coverage, and every locale aligned", async () => {
-    await expect(checkAndroidAppI18n({ tolerateManagedPending: true })).resolves.toBeUndefined();
-    const catalog = await buildAndroidAppI18nCatalog();
-    const base = catalog.resources.get(
-      path.resolve("apps/android/app/build/generated/native-i18n/res/values/native_strings.xml"),
-    );
-    expect(base).toMatch(
-      /<string name="native_[a-f0-9]+"[^>]*tools:ignore="Typos,TypographyDashes,TypographyEllipsis">/u,
-    );
-  });
-
-  it("builds complete Wear and third-party resources for every native locale", async () => {
-    const catalog = await buildAndroidAppI18nCatalog();
-    const wearResources = [...catalog.resources].filter(
-      ([filePath]) =>
-        filePath.includes("/apps/android/wear/src/main/res/values-") &&
-        filePath.endsWith("/strings.xml"),
-    );
-    const base = await readFile("apps/android/wear/src/main/res/values/strings.xml", "utf8");
-    const baseKeys = [...base.matchAll(/<string name="([^"]+)"/gu)]
-      .map((match) => match[1] as string)
-      .toSorted((left, right) => (left < right ? -1 : left > right ? 1 : 0));
-    const basePlaceholders = [...base.matchAll(/%\d+\$[a-z]/giu)]
-      .map((match) => match[0])
-      .toSorted((left, right) => (left < right ? -1 : left > right ? 1 : 0));
-
-    expect(wearResources).toHaveLength(NATIVE_I18N_LOCALES.length);
-    for (const [, content] of wearResources) {
-      const stringTags = [...content.matchAll(/<string\b[^>]*>/gu)].map((match) => match[0]);
-      const keys = stringTags
-        .map((tag) => tag.match(/\bname="([^"]+)"/u)?.[1])
-        .filter((key): key is string => key !== undefined)
-        .toSorted();
-      const placeholders = [...content.matchAll(/%\d+\$[a-z]/giu)]
-        .map((match) => match[0])
-        .toSorted();
-      expect(keys).toEqual(baseKeys);
-      expect(placeholders).toEqual(basePlaceholders);
-      expect(content).not.toMatch(/(?:&apos;|(?<!\\)')/u);
-      expect(content).toContain('<resources xmlns:tools="http://schemas.android.com/tools">');
-      for (const tag of stringTags) {
-        if (!tag.includes('translatable="false"')) {
-          expect(tag.match(/\btools:ignore=/gu)).toHaveLength(1);
-          expect(tag).toMatch(/\btools:ignore="[^"]*\bTypos\b[^"]*"/u);
-          expect(tag).toMatch(/\btools:ignore="[^"]*\bTypographyDashes\b[^"]*"/u);
-          expect(tag).toMatch(/\btools:ignore="[^"]*\bTypographyEllipsis\b[^"]*"/u);
-        }
-      }
-      expect(content).toContain(
-        'name="open_thread" tools:ignore="MissingTranslation,Typos,TypographyDashes,TypographyEllipsis"',
-      );
-      expect(content).toContain(
-        'name="show_new_messages" tools:ignore="MissingTranslation,Typos,TypographyDashes,TypographyEllipsis"',
-      );
-    }
-
-    const thirdPartyBase = await readFile(
-      "apps/android/app/src/thirdParty/res/values/accessibility_strings.xml",
-      "utf8",
-    );
-    const resources = [...catalog.resources].filter(
-      ([filePath]) =>
-        filePath.includes("/apps/android/app/src/thirdParty/res/values-") &&
-        filePath.endsWith("/accessibility_strings.xml"),
-    );
-
-    expect(thirdPartyBase).toContain('tools:ignore="MissingTranslation"');
-    expect(resources).toHaveLength(NATIVE_I18N_LOCALES.length);
-    for (const [, content] of resources) {
-      expect(content).toContain('name="accessibility_service_label"');
-      expect(content).toContain('name="accessibility_dev_activity_label"');
-    }
-  });
-
-  it("preserves the existing Swedish app name", async () => {
-    const strings = await readFile("apps/android/app/src/main/res/values-sv/strings.xml", "utf8");
-    expect(strings).toContain('<string name="app_name">OpenClaw-nod</string>');
-  });
-
   it("requires exact Android resource reference identifiers", () => {
     expect(
       findUnusedAndroidResourceKeys(

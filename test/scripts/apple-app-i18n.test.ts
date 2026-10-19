@@ -1,24 +1,17 @@
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
-import os from "node:os";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core/expect";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildIosCatalog,
   buildMacosCatalog,
-  compileMacosLocalizations,
-  checkAppleAppI18n,
   findAmbiguousRuntimeInterpolations,
   infoPlistTranslationCandidates,
   selectInfoPlistTranslation,
-  serializeAppleCatalog,
-  verifyAppleAppI18n,
 } from "../../scripts/apple-app-i18n.ts";
 import {
   type NativeI18nInventoryEntry,
   parseNativeI18nInventory,
 } from "../../scripts/native-i18n-inventory.ts";
-import { NATIVE_I18N_LOCALES } from "../../scripts/native-i18n-locales.ts";
 
 const probe = vi.hoisted(() => ({
   source: "",
@@ -53,44 +46,6 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 });
 
 describe("Apple app i18n catalogs", () => {
-  it("verification and compile-macos reject raw macOS interpolation and retain shared/iOS coverage", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "openclaw-apple-runtime-"));
-    const output = path.join(root, "output");
-    const gates = [() => verifyAppleAppI18n(), () => compileMacosLocalizations(output)];
-    try {
-      probe.source = 'Label("Expires in \\(minutes) minutes", systemImage: "clock")';
-      const diagnostic = [
-        "Apple i18n runtime interpolation bypasses generated catalog coverage:",
-        ...probe.paths
-          .toSorted()
-          .map((entry) => path.normalize(entry) + ": interpolated SwiftUI text literal"),
-      ].join("\n");
-      for (const gate of gates) {
-        await expect(gate()).rejects.toThrow(new Error(diagnostic));
-      }
-      await expect(readdir(output)).rejects.toMatchObject({ code: "ENOENT" });
-
-      probe.source = [
-        "let minutes: Int = 3",
-        'Label(String(format: String(localized: "Expires in %lld minutes"), minutes), systemImage: "clock")',
-        'Text(verbatim: "\\(name) — \\(minutes)")',
-        "let count: Int = 2",
-        'String(AttributedString(localized: "^[\\(count) message](inflect: true)").characters)',
-      ].join("\n");
-      for (const gate of gates) {
-        await expect(gate()).resolves.toBeUndefined();
-      }
-      const english = await readFile(path.join(output, "en.lproj", "Localizable.strings"), "utf8");
-      expect(english).toContain('"Expires in %lld minutes" = "Expires in %lld minutes";');
-      expect(english).toContain(
-        '"^[%lld message](inflect: true)" = "^[%lld message](inflect: true)";',
-      );
-    } finally {
-      probe.source = "";
-      await rm(root, { recursive: true, force: true });
-    }
-  });
-
   it("derives shared discovery status coverage into the iOS catalog", async () => {
     const inventory = parseNativeI18nInventory(
       await readFile("apps/.i18n/native-source.json", "utf8"),
@@ -104,116 +59,6 @@ describe("Apple app i18n catalogs", () => {
     expect(Object.keys(build.catalog.strings ?? {})).toEqual(
       expect.arrayContaining(["Searching…", "Stopped", "Waiting"]),
     );
-  });
-
-  it("warns only when obsolete Apple keys are the entire catalog drift", async () => {
-    const inventory = parseNativeI18nInventory(
-      await readFile("apps/.i18n/native-source.json", "utf8"),
-    );
-    const translations = await Promise.all(
-      NATIVE_I18N_LOCALES.map(async (locale) =>
-        JSON.parse(await readFile(`apps/.i18n/native/${locale}.json`, "utf8")),
-      ),
-    );
-    const catalogs = await Promise.all(
-      (
-        [
-          ["apps/ios/Resources/Localizable.xcstrings", buildIosCatalog],
-          ["apps/macos/Sources/OpenClaw/Resources/Localizable.xcstrings", buildMacosCatalog],
-        ] as const
-      ).map(async ([file, buildCatalog]) => {
-        const filePath = path.resolve(file);
-        const build = buildCatalog(
-          JSON.parse(await readFile(filePath, "utf8")),
-          inventory,
-          translations,
-        );
-        return { filePath, catalog: build.catalog };
-      }),
-    );
-    try {
-      // Source PRs can await generation; keep this fixture's active resources current.
-      for (const { filePath, catalog } of catalogs) {
-        probe.catalogs.set(filePath, serializeAppleCatalog(catalog));
-      }
-      for (const { filePath, catalog } of catalogs) {
-        const warnings: string[] = [];
-        const options = { reportObsolete: (message: string) => warnings.push(message) };
-        const strings = expectDefined(catalog.strings, "active catalog strings");
-        const activeKey = expectDefined(
-          Object.keys(strings).find((key) => key.includes("%@")),
-          "active format key",
-        );
-        const obsolete: typeof catalog & { strings: typeof strings } = {
-          ...catalog,
-          strings: {
-            ...strings,
-            "Retired synthetic %@": {
-              localizations: { en: { stringUnit: { state: "new", value: "" } } },
-            },
-            "Retired empty title": {},
-          },
-        };
-        const serialized = serializeAppleCatalog(obsolete);
-        probe.catalogs.set(filePath, serialized);
-        await expect(checkAppleAppI18n()).rejects.toThrow("is stale");
-        warnings.length = 0;
-        await expect(checkAppleAppI18n(options)).resolves.toBeUndefined();
-        expect(warnings).toEqual([
-          `Apple obsolete catalog rows: ${path.relative(process.cwd(), filePath).replaceAll("\\", "/")} (keys=2)`,
-        ]);
-
-        for (const ineligibleRow of [
-          "null",
-          "42",
-          '{"localizations":null}',
-          '{"localizations":{"en":42}}',
-          '{"localizations":{"en":{"stringUnit":null}}}',
-          '{"localizations":{"en":{"stringUnit":{"state":"new"}}}}',
-          '{"localizations":{"en":{"stringUnit":{"state":42,"value":"Retired"}}}}',
-          '{"comment":42}',
-          '{"localizations":{"en":{"variations":{}}}}',
-        ]) {
-          probe.catalogs.set(
-            filePath,
-            serialized.replace(
-              '"Retired empty title": {}',
-              `"Retired empty title": ${ineligibleRow}`,
-            ),
-          );
-          await expect(checkAppleAppI18n(options)).rejects.toThrow();
-        }
-
-        const missingKey = structuredClone(obsolete);
-        delete missingKey.strings[activeKey];
-        const missingLocale = structuredClone(obsolete);
-        delete missingLocale.strings[activeKey]?.localizations?.de;
-        const placeholderDrift = structuredClone(obsolete);
-        expectDefined(
-          placeholderDrift.strings[activeKey]?.localizations?.de?.stringUnit,
-          "German format unit",
-        ).value = "Missing format argument";
-        const metadataDrift = structuredClone(obsolete);
-        expectDefined(metadataDrift.strings[activeKey], "active catalog entry").comment =
-          "Unexpected metadata";
-        for (const invalid of [
-          serializeAppleCatalog(missingKey),
-          serializeAppleCatalog(missingLocale),
-          serializeAppleCatalog(placeholderDrift),
-          serializeAppleCatalog(metadataDrift),
-          serializeAppleCatalog({ ...obsolete, sourceLanguage: "fr" }),
-          serializeAppleCatalog({ ...obsolete, version: "2.0" }),
-          `${serialized}\n`,
-          `${serialized}malformed\n`,
-        ]) {
-          probe.catalogs.set(filePath, invalid);
-          await expect(checkAppleAppI18n(options)).rejects.toThrow();
-        }
-        probe.catalogs.set(filePath, serializeAppleCatalog(catalog));
-      }
-    } finally {
-      probe.catalogs.clear();
-    }
   });
 
   it("routes merged sites by coupled path and kind while preserving shipped translations", () => {

@@ -28,10 +28,7 @@ import {
   cleanupStaleManagedServiceUpdateHandoffs,
   MANAGED_SERVICE_UPDATE_HANDOFF_TEMP_PREFIX,
 } from "./update-managed-service-handoff-cleanup.js";
-import {
-  isManagedServiceInspectionCommand,
-  registerManagedHandoffOwnerTests,
-} from "./update-managed-service-handoff-lifecycle.test-support.js";
+import { isManagedServiceInspectionCommand } from "./update-managed-service-handoff-lifecycle.test-support.js";
 import { pathExists } from "./update-managed-service-native.test-support.js";
 import { recordUpdateRunStep } from "./update-run-ledger.js";
 
@@ -96,8 +93,6 @@ describe("managed service update handoff", () => {
       expect(relative === "" || relative.startsWith("..") || path.isAbsolute(relative)).toBe(false);
     }
   });
-
-  registerManagedHandoffOwnerTests(runManagedServiceManagerBoundary, itUnix, expect);
 
   itUnix.each(["addressed-unsafe", "rollback", "unsafe", "validation"] as const)(
     "coordinates CLI %s outcomes and preserves the notice destination",
@@ -421,26 +416,6 @@ describe("managed service update handoff", () => {
       expect(commands).toEqual([]);
       expect(parentSignal).toBeNull();
       expect(log).not.toContain("gateway service recovery");
-    },
-  );
-
-  itUnix(
-    "rechecks revoked chat ownership after validation before stopping the Gateway",
-    async () => {
-      const { commands, parentSignal, sentinel } = await runManagedServiceManagerBoundary(
-        "systemd",
-        {
-          controlDisconnect: "transferred",
-          requester: { channel: "slack", accountId: "primary", senderId: "owner" },
-          revokeWhileValidating: true,
-          helperExitCode: 1,
-        },
-      );
-      expect(commands.filter((command) => !isManagedServiceInspectionCommand(command))).toEqual([]);
-      expect(parentSignal).toBeNull();
-      expect(sentinel).toMatchObject({
-        payload: { status: "error", stats: { reason: "owner_required" } },
-      });
     },
   );
 

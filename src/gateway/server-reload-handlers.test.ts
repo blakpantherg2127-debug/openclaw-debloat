@@ -1573,14 +1573,6 @@ describe("gateway hot reload model state", () => {
       removed: false,
     },
     {
-      name: "retains discovery when no endpoint was authored",
-      providerKey: "ollama",
-      nextProviderKey: undefined,
-      authoredBaseUrl: undefined,
-      cachedBaseUrl: "http://127.0.0.1:11434",
-      removed: false,
-    },
-    {
       name: "removes a provider configured with an uppercase key",
       providerKey: "OLLAMA",
       nextProviderKey: undefined,

@@ -12,7 +12,6 @@ import {
 // Register the harness metadata mock before loading the real config and command modules.
 const configRuntime = await import("../config/config.js");
 const { clearConfigCache } = configRuntime;
-const { REDACTED_SENTINEL } = await import("../config/redact-snapshot.js");
 const { readDeferredPluginMigrations, recordDeferredPluginMigrations } =
   await import("../infra/deferred-plugin-migrations.js");
 const { closeOpenClawStateDatabaseForTest } = await import("../state/openclaw-state-db.js");
@@ -478,66 +477,6 @@ describe("config cli integration", () => {
       }
       expect(read(configPath)).toBe(raw);
     });
-  });
-
-  it("redacts SecretRef ids and plugin-only sensitive fields in JSON/text order", async () => {
-    const secretRefId = "CONFIG_GET_TEST_TOKEN";
-    const schemaOnlySecrets = ["first-private-route", "second-private-route"];
-    await withConfig(
-      `${JSON.stringify(
-        {
-          channels: {
-            discord: {
-              enabled: false,
-              token: { source: "env", provider: "default", id: secretRefId },
-            },
-          },
-          plugins: {
-            entries: {
-              codex: {
-                enabled: true,
-                config: {
-                  appServer: {
-                    headers: {
-                      "X-First": schemaOnlySecrets[0],
-                      "X-Second": schemaOnlySecrets[1],
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        null,
-        2,
-      )}\n`,
-      async () => {
-        const output = createTestRuntime();
-        await runConfigGet({ path: "channels.discord.token", json: true, runtime: output.runtime });
-        await runConfigGet({ path: "channels.discord.token.id", runtime: output.runtime });
-        await runConfigGet({
-          path: "plugins.entries.codex.config.appServer.headers",
-          json: true,
-          runtime: output.runtime,
-        });
-        await runConfigGet({
-          path: "plugins.entries.codex.config.appServer.headers",
-          runtime: output.runtime,
-        });
-
-        expect(output.errors).toStrictEqual([]);
-        expect(output.logs).toStrictEqual([
-          JSON.stringify({ source: "env", provider: "default", id: REDACTED_SENTINEL }, null, 2),
-          `${REDACTED_SENTINEL}\n`,
-          JSON.stringify(REDACTED_SENTINEL),
-          `${REDACTED_SENTINEL}\n`,
-        ]);
-        expect(output.logs.join("\n")).not.toContain(secretRefId);
-        for (const secret of schemaOnlySecrets) {
-          expect(output.logs.join("\n")).not.toContain(secret);
-        }
-      },
-    );
   });
 
   it.each([

@@ -135,44 +135,6 @@ describe("policy commands", () => {
     await fs.rm(workspaceDir, { recursive: true, force: true });
   });
 
-  it("checks authored routing probes without exposing route identifiers", async () => {
-    const peerId = "+15555550123-private";
-    const configPath = join(workspaceDir, "openclaw.jsonc");
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
-    await writeFixture(configPath, {
-      plugins: { entries: { policy: { enabled: true, config: { enabled: true } } } },
-      agents: { entries: { main: {} } },
-      channels: { imessage: { enabled: false } },
-      bindings: [],
-    });
-    await writeFixture(join(workspaceDir, "policy.jsonc"), {
-      routing: {
-        requireBindings: true,
-        requireConfiguredChannels: true,
-        probes: [
-          {
-            id: "family-dm",
-            route: { channel: "imessage", peer: { kind: "direct", id: peerId } },
-            expect: { agentId: "family", matchedBy: ["binding.peer"] },
-          },
-        ],
-      },
-    });
-
-    const { exitCode, parsed, output } = await runPolicyCheckJson();
-
-    expect(exitCode).toBe(1);
-    expect(parsed.findings.map((finding: { checkId: string }) => finding.checkId)).toEqual([
-      "policy/routing-bindings-required",
-      "policy/routing-agent-mismatch",
-      "policy/routing-match-kind-mismatch",
-    ]);
-    expect(parsed.evidence.routing.probes).toEqual([
-      expect.objectContaining({ id: "family-dm", agentId: "main", matchedBy: "default" }),
-    ]);
-    expect(output.join("\n")).not.toContain(peerId);
-  });
-
   it.each([
     {
       name: "reports malformed policy rules in policy check output",

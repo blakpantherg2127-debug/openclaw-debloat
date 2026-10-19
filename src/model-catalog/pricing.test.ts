@@ -17,7 +17,6 @@ import type { ModelDefinitionConfig } from "../config/types.models.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { resolveInstalledPluginIndexStorePath } from "../plugins/installed-plugin-index-store-path.js";
 import * as manifestNormalization from "../plugins/manifest-model-id-normalization.js";
-import { normalizeManifestModelPricing } from "../plugins/manifest-model-provider-normalizers.js";
 import type { PersistedInstalledPluginIndexCacheEntry } from "../plugins/plugin-cache-management.js";
 import {
   createPluginCache,
@@ -241,47 +240,6 @@ describe("hosted model pricing", () => {
       ).toBe(2.5);
     },
   );
-
-  it("accepts exact free pricing from an authoritative native source", () => {
-    const agentDir = tempDirs.make("openclaw-native-zero-policy-");
-    vi.stubEnv("OPENCLAW_STATE_DIR", agentDir);
-    const config: OpenClawConfig = {
-      plugins: { allow: ["venice"], entries: { venice: { enabled: true } } },
-    };
-    const snapshot = pluginMetadata.resolvePluginMetadataSnapshot({ config, env: process.env });
-    const plugins = [...snapshot.manifestRegistry.plugins];
-    const ownerIndex = plugins.findIndex((plugin) => plugin.id === "venice");
-    plugins[ownerIndex] = {
-      ...expectDefined(plugins[ownerIndex], "Venice manifest owner"),
-      modelPricing: normalizeManifestModelPricing(
-        { providers: { venice: { openCode: { provider: "upstream" } } } },
-        { ownedProviders: new Set(["venice"]) },
-      ),
-    };
-    vi.spyOn(pluginMetadata, "resolvePluginMetadataSnapshot").mockReturnValue({
-      ...snapshot,
-      manifestRegistry: { ...snapshot.manifestRegistry, plugins },
-    });
-    readStoredCatalog.mockReturnValue({
-      source_url: "https://catalog.openclaw.ai/models/v2/catalog.json",
-      bundle_json: JSON.stringify({
-        schemaVersion: 1,
-        generatedAt: 200,
-        sourceCommit: "native-zero-policy",
-        providers: { venice: { models: [{ id: "zero-fixture", cost: { input: 0, output: 0 } }] } },
-        pricing: {
-          "venice/zero-fixture": { input: 0, output: 0 },
-        },
-      }),
-    });
-    const cost = resolveModelCostConfig({
-      config,
-      agentDir,
-      provider: "venice",
-      model: "zero-fixture",
-    });
-    expect(cost).toEqual({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
-  });
 
   const catalogRates = { input: 2, output: 8, cacheRead: 0.5, cacheWrite: 1 };
   const catalogTiers = [

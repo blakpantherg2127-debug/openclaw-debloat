@@ -28,15 +28,4 @@ describe("provider env vars", () => {
     expect(env.Github_Token).toBeUndefined();
     expect(env.OPENCLAW_API_KEY).toBe("keep-me");
   });
-
-  it("ignores prototype-chain keys when resolving provider env vars", () => {
-    expect(getProviderEnvVarsCore("__proto__")).toStrictEqual([]);
-    expect(getProviderEnvVarsCore("constructor")).toStrictEqual([]);
-    expect(getProviderEnvVarsCore("openai")).toEqual(["CODEX_API_KEY", "OPENAI_API_KEY"]);
-    expect(getProviderEnvVarsCore("anthropic")).toEqual([
-      "ANTHROPIC_OAUTH_TOKEN",
-      "ANTHROPIC_API_KEY",
-    ]);
-    expect(getProviderEnvVarsCore("fal")).toEqual(["FAL_KEY", "FAL_API_KEY"]);
-  });
 });

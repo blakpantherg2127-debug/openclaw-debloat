@@ -52,15 +52,6 @@ describe("isSystemAgentSensitiveConfigValue", () => {
     ).toBe(true);
   });
 
-  it("keeps structured parent writes visible when no descendant is sensitive", () => {
-    expect(
-      isSystemAgentSensitiveConfigValue(
-        "channels.synology-chat",
-        '{ enabled: true, webhookPath: "/synology" }',
-      ),
-    ).toBe(false);
-  });
-
   it("preserves escaped path segments while matching wildcard descendant hints", () => {
     expect(
       isSystemAgentSensitiveConfigValue(
@@ -126,19 +117,6 @@ describe("isSystemAgentSensitiveConfigPathEmbedding", () => {
     'channels.buzz.groups["gateway.auth.token=ACTUAL_GATEWAY_TOKEN"].enabled',
   ])("redacts unknown-owner or secret-bearing path %s", (path) => {
     expect(redactSystemAgentConfigPath(path)).toBe("<redacted path>");
-  });
-
-  it.each([
-    'channels.synology-chat.accounts["prod=us"].enabled',
-    "plugins.entries.codex.config.appServer.headers.AuthorizationabcDEF123",
-    'plugins.entries.codex.config.appServer.headers["X-Test"]',
-    'channels.synology-chat.accounts["token=prod"].enabled',
-    'broadcast["token=prod"]',
-    'session.identityLinks["token=prod"]',
-    'channels.modelByChannel["token=prod"].chat',
-    'channels.telegram.groups["prod.guild"].topics["token=prod"].groupPolicy',
-  ])("preserves schema-valid path %s", (path) => {
-    expect(redactSystemAgentConfigPath(path)).toBe(path);
   });
 });
 

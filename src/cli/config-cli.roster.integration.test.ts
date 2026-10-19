@@ -2,8 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import JSON5 from "json5";
-import { describe, expect, it, vi } from "vitest";
-import { resolveAgentWorkspaceDir } from "../agents/agent-scope-config.js";
+import { describe, expect, it } from "vitest";
 import { resolveLegacyInheritedAuthAgentId } from "../agents/legacy-inherited-auth-dir.js";
 import { readConfigFileSnapshot } from "../config/config.js";
 import { resolveSessionStoreCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
@@ -11,7 +10,6 @@ import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../test-utils/e
 import { formatCliCommand } from "./command-format.js";
 import { useConfigCliIntegrationHarness } from "./config-cli.integration.test-harness.js";
 
-const cronOwnerRefusal = await import("../config/io.cron-owner-refusal.js");
 const {
   registeredRuntimeLogs: logs,
   registeredRuntimeErrors: errors,
@@ -537,104 +535,6 @@ describe("config cli roster integration", () => {
       expect(read(configPath)).toBe(raw);
       expect(errors.join("\n")).toContain(error);
       expect(logs.join("\n")).not.toContain("Updated");
-    });
-  });
-
-  it.each([
-    { mode: "legacy agents replacement", ownerId: "main", input: "agents" },
-    { mode: "batch changes retired default", ownerId: "keeper", input: "batch" },
-    { mode: "explicit destination store owner", ownerId: "keeper", input: "owned-store" },
-  ])("preserves ownership intent through $mode preview and write", async (scenario) => {
-    const { ownerId, input } = scenario;
-    const changedStore = input.endsWith("store");
-    const prepareCronOwner = vi.spyOn(cronOwnerRefusal, "prepareCronOwnerWriteRefusal");
-    await withConfig("{}", async ({ configPath, tempDir }) => {
-      const workspace = path.join(fs.realpathSync(tempDir), "existing-workspace");
-      const defaults = {
-        workspace,
-        ...(changedStore ? { sessionStore: { agentId: ownerId } } : {}),
-      };
-      const ownerEntry = { name: "original-owner" };
-      const original = {
-        agents: {
-          defaults,
-          entries: {
-            [ownerId]: ownerEntry,
-          },
-        },
-        session: { store: path.join(fs.realpathSync(tempDir), "sessions.sqlite") },
-        channels: { discord: { enabled: true, dmPolicy: "disabled", groupPolicy: "disabled" } },
-      };
-      const nextStore = changedStore
-        ? path.join(fs.realpathSync(tempDir), "destination.sqlite")
-        : original.session.store;
-      const raw = `${JSON.stringify(original)}\n`;
-      fs.writeFileSync(configPath, raw);
-      const list = [
-        { id: ownerId, ...ownerEntry, default: !changedStore },
-        {
-          id: "work",
-          name: "new-worker",
-          ...(changedStore ? { default: true } : {}),
-        },
-      ];
-      let args: string[];
-      if (input === "agents") {
-        args = ["config", "set", "agents", JSON.stringify({ defaults, list }), "--strict-json"];
-      } else {
-        const operations = changedStore
-          ? [
-              {
-                path: "agents",
-                value: {
-                  ownership: "explicit",
-                  defaults,
-                  entries: { [ownerId]: ownerEntry, work: { name: "new-worker" } },
-                },
-              },
-              { path: "session.store", value: nextStore },
-              { path: "agents.defaults.sessionStore.agentId", value: "work" },
-            ]
-          : [
-              { path: "agents.list", value: list },
-              { path: `agents.entries.${ownerId}.default`, value: false },
-              { path: "agents.entries.work.default", value: true },
-            ];
-        args = ["config", "set", "--batch-json", JSON.stringify(operations)];
-      }
-      await invoke([...args, "--dry-run"]);
-      expect(read(configPath)).toBe(raw);
-      expect(prepareCronOwner).not.toHaveBeenCalled();
-      await invoke(args);
-      expect(prepareCronOwner).toHaveBeenCalledTimes(1);
-      expect(read(`${configPath}.bak`)).toBe(raw);
-      const after = load(configPath);
-      expect(after.agents).toMatchObject({
-        ownership: "explicit",
-        defaults: {
-          heartbeat: { agentId: ownerId },
-          systemAgent: { agentId: ownerId },
-        },
-      });
-      expect(after.agents.entries).toEqual({
-        [ownerId]: { name: "original-owner", workspace },
-        work: { name: "new-worker" },
-      });
-      expect(after.agents).not.toHaveProperty("list");
-      expect(after.talk.agentId).toBe(ownerId);
-      expect(after.bindings).toEqual([
-        { agentId: ownerId, match: { channel: "discord", accountId: "*" } },
-      ]);
-      const reloaded = await readConfigFileSnapshot();
-      expect(reloaded.valid).toBe(true);
-      expect(resolveAgentWorkspaceDir(reloaded.config, ownerId)).toBe(workspace);
-      expect(resolveAgentWorkspaceDir(reloaded.config, "work")).toBe(path.join(workspace, "work"));
-      expect(resolveLegacyInheritedAuthAgentId(reloaded.config)).toBe(ownerId);
-      expect(after.session.store).toBe(nextStore);
-      const expectedStoreOwner = input === "owned-store" ? "work" : ownerId;
-      expect(after.agents.defaults.sessionStore.agentId).toBe(expectedStoreOwner);
-      expect(resolveSessionStoreCompatibilityAgentId(reloaded.config)).toBe(expectedStoreOwner);
-      expect(errors).toEqual([]);
     });
   });
 });

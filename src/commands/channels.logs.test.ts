@@ -134,22 +134,6 @@ describe("channelsLogsCommand", () => {
     expect(output).not.toContain("shadow");
   });
 
-  it("rejects an unknown explicit channel without widening output", async () => {
-    await fs.writeFile(
-      logPath,
-      logLine({ module: "gateway/channels/slack/send", message: "unrelated message" }),
-    );
-
-    const error = await channelsLogsCommand({ channel: "slakc", json: true }, runtime).catch(
-      (cause: unknown) => cause,
-    );
-    expect(error).toBeInstanceOf(Error);
-    expect((error as Error).message).toContain('Unknown channel "slakc". Valid channels: all,');
-    expect((error as Error).message).toContain("external-chat");
-    expect((error as Error).message).toContain("slack");
-    expect(runtime.log).not.toHaveBeenCalled();
-  });
-
   it.each([
     { lines: undefined, count: 200 },
     { lines: 2, count: 2 },

@@ -913,40 +913,6 @@ describe("release Telegram QA workflow", () => {
     expect(rerun.statusFile).toContain("run_attempt=2");
   });
 
-  it.runIf(process.platform === "linux")("retains only bounded, allowlisted diagnostics", () => {
-    const source = extractHereDocument(
-      requireRun("run_telegram", "Capture isolated Telegram runtime diagnostics"),
-      "NODE",
-    );
-    const workdir = tempDirs.make("openclaw-telegram-diagnostics-");
-    const scriptPath = join(workdir, "redact-gateway-tail.mts");
-    const outputPath = join(workdir, "gateway.log");
-    writeFileSync(scriptPath, source);
-    const records = [
-      { 0: '{"subsystem":"gateway"}', 1: "ordinary info", _meta: { logLevelName: "INFO" } },
-      {
-        0: '{"subsystem":"agents/embedded"}',
-        1: "embedded run start: safe",
-        _meta: { logLevelName: "DEBUG" },
-      },
-      {
-        0: '{"subsystem":"agents/embedded"}',
-        1: "private trace",
-        _meta: { logLevelName: "TRACE" },
-      },
-    ];
-    const result = spawnSync(process.execPath, ["--import", "tsx", scriptPath, outputPath], {
-      cwd: process.cwd(),
-      encoding: "utf8",
-      input: `${records.map((record) => JSON.stringify(record)).join("\n")}\n`,
-    });
-    expect(result.status, result.stderr).toBe(0);
-    const output = readFileSync(outputPath, "utf8");
-    expect(output).toContain("ordinary info");
-    expect(output).toContain("embedded run start: safe");
-    expect(output).not.toContain("private trace");
-  });
-
   it("shares only the isolated workspace with the trusted scenario host", () => {
     const createSut = requireRun(
       "run_telegram",

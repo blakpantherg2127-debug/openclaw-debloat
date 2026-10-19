@@ -500,14 +500,6 @@ function writePatchedRuntimeFixture(bundling = "default") {
 }
 
 describe("plugin npm package manifest staging", () => {
-  it("keeps msteams runtime dependencies registry-installed", () => {
-    const packageJson = JSON.parse(
-      readFileSync(join(process.cwd(), "extensions", "msteams", "package.json"), "utf8"),
-    ) as { openclaw?: { release?: { bundleRuntimeDependencies?: boolean } } };
-
-    expect(packageJson.openclaw?.release?.bundleRuntimeDependencies).toBe(false);
-  });
-
   it.each(["recovered timeout", "ordinary failure", "exhausted timeout"])(
     "settles bundled dependency installs after %s",
     (scenario) => {

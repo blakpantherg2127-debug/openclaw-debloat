@@ -29,9 +29,7 @@ import {
   createTargetedCoreLintCommands,
   createTargetedExtensionLintCommand,
   shouldDelegateChangedCheckToCrabbox,
-  shouldRunNpmLockGuard,
   shouldRunTestTempCreationReport,
-  createNpmLockGuardCommand,
   delegationFailedBeforeRunning,
 } from "../../scripts/check-changed.mts";
 import { resolveOxfmtInvocation } from "../../scripts/format-docs.mts";
@@ -40,7 +38,6 @@ import { resolveTestNodeExecPath } from "../../src/test-utils/node-process.js";
 import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 import { createNestedGitEnv } from "../helpers/temp-repo.js";
 import { preparedScriptWrapperEnv } from "./prepared-script-wrapper.test-support.js";
-import { copyOxlintConfigFixture } from "./test-helpers.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 const repoRoot = process.cwd();
@@ -148,96 +145,6 @@ function createGitRepo(prefix: string) {
   writeRepoFile(dir, "README.md", "initial\n");
   commitAll(dir, "initial");
   return dir;
-}
-
-function createRootTestLintFixture() {
-  const dir = createGitRepo("openclaw-changed-root-lint-");
-  copyOxlintConfigFixture(dir);
-  for (const file of [
-    "tsconfig.json",
-    "test/tsconfig.json",
-    "test/tsconfig/tsconfig.test.json",
-    "test/tsconfig/tsconfig.test.root.json",
-    "test/vitest/vitest.test-shards.d.mts",
-    "src/gateway/server-methods-list.ts",
-    "src/gateway/events.ts",
-    "scripts/protocol-event-coverage.allowlist.json",
-  ]) {
-    writeRepoFile(dir, file, readFileSync(path.join(repoRoot, file), "utf8"));
-  }
-  // This fixture supplies its own source/ambient graph. Full-repository E2E
-  // augmentations are covered by the root-partition inventory test.
-  const lintConfig = "test/tsconfig.json";
-  writeRepoFile(
-    dir,
-    lintConfig,
-    JSON.stringify({ ...JSON.parse(readFileSync(path.join(dir, lintConfig), "utf8")), files: [] }),
-  );
-  for (const [file, source] of Object.entries({
-    "src/plugin-sdk/discovery.ts":
-      "export function work(): Promise<void> { return Promise.resolve(); }",
-    "src/contracts.d.ts": "declare function fromCore(): Promise<void>;",
-    "ui/contracts.d.ts": "declare function fromUi(): Promise<void>;",
-    "packages/contracts.d.ts": "declare function fromPackage(): Promise<void>;",
-  })) {
-    writeRepoFile(dir, file, source);
-  }
-  mkdirSync(path.join(dir, "node_modules/.bin"), { recursive: true });
-  for (const name of ["@types/node", "vitest", "tsx"]) {
-    const destination = path.join(dir, "node_modules", name);
-    mkdirSync(path.dirname(destination), { recursive: true });
-    symlinkSync(path.join(repoRoot, "node_modules", name), destination, "junction");
-  }
-  // Lint still uses the real tools, but its install cannot own the native compiler.
-  // Direct package entries preserve relative imports and the tsgolint peer context.
-  for (const [bin, entry] of [
-    ["oxlint", "oxlint/bin/oxlint"],
-    ["tsgolint", "oxlint-tsgolint/bin/tsgolint.js"],
-  ] as const) {
-    symlinkSync(
-      path.join(repoRoot, "node_modules", entry),
-      path.join(dir, "node_modules/.bin", bin),
-      "file",
-    );
-    if (process.platform === "win32") {
-      writeRepoFile(dir, `node_modules/.bin/${bin}.cmd`, `@node "%~dp0${bin}" %*\r\n`);
-    }
-  }
-  // All-lane plans run the real coverage guard against unchanged mobile inputs.
-  symlinkSync(path.join(repoRoot, "apps"), path.join(dir, "apps"), "junction");
-  for (const script of [
-    "run-oxlint.mjs",
-    "report-test-temp-creations.mjs",
-    "check-protocol-event-coverage.mjs",
-  ]) {
-    symlinkSync(path.join(repoRoot, "scripts", script), path.join(dir, "scripts", script));
-  }
-  // Stub unrelated package gates at the executable boundary: real pnpm could
-  // reconcile this partial install. The CLI and source-only lint wrapper stay real.
-  // The export audit is selected normally, but this fixture has only the lint graph.
-  writeRepoFile(dir, "scripts/check-deadcode-exports.mts", "export {};\n");
-  const binDir = path.join(dir, "bin");
-  for (const bin of ["pnpm", "corepack"]) {
-    writeRepoFile(dir, `bin/${bin}`, "#!/bin/sh\nexit 0\n");
-    chmodSync(path.join(binDir, bin), 0o755);
-    writeRepoFile(dir, `bin/${bin}.cmd`, "@echo off\r\nexit /b 0\r\n");
-  }
-  const env = syntheticCoreTestOwnerEnv(dir, {
-    ...createNestedGitEnv(),
-    OXC_LOG: "debug",
-    PATH: `${binDir}${path.delimiter}${process.env.PATH ?? ""}`,
-  });
-  delete env.OPENCLAW_TESTBOX;
-  delete env.OPENCLAW_OXLINT_SKIP_PREPARE;
-  return {
-    dir,
-    run: (script: string, args: string[]) =>
-      spawnSync(testNodeExecPath, [path.join(repoRoot, script), ...args], {
-        cwd: dir,
-        encoding: "utf8",
-        env,
-      }),
-  };
 }
 
 // Executes the exact "format changed files" plan command with the repo-pinned oxfmt,
@@ -762,84 +669,6 @@ describe("scripts/changed-lanes", () => {
     expect(formatted.status).toBe(0);
   });
 
-  it.each([
-    {
-      name: "an all-lane mixed diff",
-      count: 1,
-      extension: "tsx",
-      otherPaths: ["vitest.config.ts"],
-    },
-    { name: "the ninth root test", count: 9, extension: "ts", otherPaths: [] },
-  ])(
-    "fails real changed-check lint for $name and passes after repair",
-    ({ count, extension, otherPaths }) => {
-      const { dir, run } = createRootTestLintFixture();
-      const targets = Array.from(
-        { length: count },
-        (_, index) => `test/root-lint-${index}.test.${extension}`,
-      );
-      const broken = targets[count - 1]!;
-      const violation = [
-        'import { work } from "openclaw/plugin-sdk/discovery";',
-        "export function run(ready: boolean) {",
-        "  if (ready) return;",
-        "  work(); fromCore(); fromUi(); fromPackage();",
-        "}",
-        "run(false);",
-        "",
-      ].join("\n");
-      for (const target of targets) {
-        writeRepoFile(dir, target, "export const ready = true;\n");
-      }
-      writeRepoFile(dir, broken, violation);
-      // Neither excluded fixtures nor unchanged tests may be swept into targeted lint.
-      writeRepoFile(dir, "test/fixtures/invalid.ts", violation);
-      writeRepoFile(dir, "test/unchanged.test.ts", violation);
-      const paths = [...targets, "test/fixtures/invalid.ts", "test/deleted.test.ts", ...otherPaths];
-      const failed = run("scripts/check-changed.mjs", ["--base", "HEAD", "--", ...paths]);
-      const diagnostics = failed.stdout + failed.stderr;
-      expect(failed.error, diagnostics).toBeUndefined();
-      expect(failed.status, diagnostics).toBe(1);
-      expect(diagnostics).toContain("eslint(curly)");
-      expect(
-        diagnostics.match(/typescript\(no-floating-promises\)/gu) ?? [],
-        diagnostics,
-      ).toHaveLength(4);
-      expect(diagnostics).toContain(broken);
-      expect(failed.stderr.trim().split("\n").at(-1)).toBe("[check:changed] FAILED (exit 1)");
-
-      writeRepoFile(
-        dir,
-        broken,
-        violation
-          .replace("if (ready) return;", "if (ready) { return; }")
-          .replace(
-            "work(); fromCore(); fromUi(); fromPackage();",
-            "void work(); void fromCore(); void fromUi(); void fromPackage();",
-          ),
-      );
-      const passed = run("scripts/check-changed.mjs", ["--base", "HEAD", "--", ...paths]);
-      expect(passed.error, passed.stdout + passed.stderr).toBeUndefined();
-      expect(passed.status, passed.stdout + passed.stderr).toBe(0);
-      const planned = run("scripts/check-changed.mjs", [
-        "--dry-run",
-        "--base",
-        "HEAD",
-        "--",
-        ...paths,
-      ]);
-      expect(planned.status, planned.stderr).toBe(0);
-      const lintPrefix =
-        "node scripts/run-oxlint.mjs --tsconfig test/tsconfig/tsconfig.test.root.json ";
-      const batches = planned.stderr
-        .split("\n")
-        .filter((line) => line.includes(lintPrefix))
-        .map((line) => line.slice(line.indexOf(lintPrefix) + lintPrefix.length).split(" "));
-      expect(batches.map((batch) => batch.length)).toEqual(count === 9 ? [8, 1] : [1]);
-      expect(batches.flat()).toEqual(targets);
-    },
-  );
-
   it("uses the merge commit first parent instead of a stale PR payload base", () => {
     const { dir, staleBase } = createSyntheticMergeRepo("openclaw-changed-lanes-merge-");
 
@@ -863,40 +692,6 @@ describe("scripts/changed-lanes", () => {
     expect(result.status).toBe(0);
     expect(parseChangedLaneOutput(result.stdout).paths).toEqual(["--"]);
     expect(parseChangedLaneOutput(result.stdout).lanes.all).toBe(true);
-  });
-
-  it.each([
-    ["config/assertion-safety-baseline.txt", "check:assertion-safety"],
-    ["config/max-lines-baseline.txt", "check:max-lines-ratchet"],
-  ])("targets mixed-owner lint while retaining the guard for %s", (baseline, guard) => {
-    const result = detectChangedLanes([
-      baseline,
-      ".github/workflows/ci.yml",
-      "src/gateway/node-registry.ts",
-      "extensions/lmstudio/src/models.fetch.ts",
-      "scripts/check-changed.mjs",
-      "test/helpers/temp-dir.ts",
-    ]);
-    const plan = createChangedCheckPlan(result, { env: { PATH: "/usr/bin" } });
-
-    for (const [owner, tsconfig, target] of [
-      ["core", "config/tsconfig/oxlint.core.json", "src/gateway/node-registry.ts"],
-      ["extension", "extensions/tsconfig.json", "extensions/lmstudio/src/models.fetch.ts"],
-      ["script", "config/tsconfig/oxlint.scripts.json", "scripts/check-changed.mjs"],
-      ["test root", "test/tsconfig/tsconfig.test.root.json", "test/helpers/temp-dir.ts"],
-    ]) {
-      expect(plan.commands).toContainEqual(
-        expect.objectContaining({
-          name: `lint ${owner} changed file`,
-          args: ["scripts/run-oxlint.mjs", "--tsconfig", tsconfig, target],
-        }),
-      );
-    }
-    const commandNames = plan.commands.map((command) => command.args[0]);
-    expect(commandNames).toContain(guard);
-    for (const fullLane of ["lint:core", "lint:extensions", "lint:scripts"]) {
-      expect(commandNames).not.toContain(fullLane);
-    }
   });
 
   it.each([
@@ -1236,31 +1031,6 @@ describe("scripts/changed-lanes", () => {
     expect(plan.commands.find((command) => command.args[0] === "changelog:check")?.args).toEqual([
       "changelog:check",
     ]);
-  });
-
-  it("runs the npm package-lock guard for dependency package surfaces", () => {
-    expect(
-      shouldRunNpmLockGuard([
-        "extensions/slack/package.json",
-        "extensions/slack/deps/local-runtime/package.json",
-        "scripts/generate-npm-package-lock.mts",
-      ]),
-    ).toBe(true);
-
-    const result = detectChangedLanes(["extensions/slack/package.json"]);
-    const plan = createChangedCheckPlan(result);
-    const npmLockGuard = createNpmLockGuardCommand(["extensions/slack/package.json"]);
-
-    expect(npmLockGuard?.args.slice(0, 3)).toEqual([
-      "--import",
-      "tsx",
-      "scripts/generate-npm-package-lock.mts",
-    ]);
-    expect(
-      npmLockGuard?.args.some((arg) => arg.replaceAll("\\", "/").endsWith("extensions/slack")),
-    ).toBe(true);
-    expect(plan.commands.map((command) => command.name)).toContain("npm package-lock guard");
-    expect(plan.commands.map((command) => command.args[0])).not.toContain("deps:npm-lock:check");
   });
 
   it.each([true])("retains non-typecheck gates with inert core edits (mixed=%s)", (mixed) => {

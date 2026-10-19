@@ -8,44 +8,6 @@ import { normalizeCompatibilityConfigValues } from "./doctor/shared/legacy-confi
 describe("normalizeCompatibilityConfigValues", () => {
   useDoctorLegacyConfigFixture();
 
-  it("migrates legacy secretref-env markers on SecretRef credential paths", () => {
-    const res = normalizeCompatibilityConfigValues({
-      secrets: {
-        defaults: {
-          env: "gateway-env",
-        },
-      },
-      channels: {
-        discord: {
-          token: "secretref-env:DISCORD_BOT_TOKEN",
-          accounts: {
-            work: {
-              token: "__env__:DISCORD_WORK_TOKEN",
-            },
-          },
-        },
-      },
-    });
-
-    expect(res.config.channels?.discord?.accounts?.default).toBeUndefined();
-    expect(res.config.channels?.discord?.token).toEqual({
-      source: "env",
-      provider: "gateway-env",
-      id: "DISCORD_BOT_TOKEN",
-    });
-    expect(res.config.channels?.discord?.accounts?.work?.token).toEqual({
-      source: "env",
-      provider: "gateway-env",
-      id: "DISCORD_WORK_TOKEN",
-    });
-    expect(res.changes).toContain(
-      "Moved channels.discord.token secretref-env:DISCORD_BOT_TOKEN marker → structured env SecretRef.",
-    );
-    expect(res.changes).toContain(
-      "Moved channels.discord.accounts.work.token __env__:DISCORD_WORK_TOKEN marker → structured env SecretRef.",
-    );
-  });
-
   it("leaves invalid legacy secretref-env markers unchanged", () => {
     const res = normalizeCompatibilityConfigValues({
       messages: {

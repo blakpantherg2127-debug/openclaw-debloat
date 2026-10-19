@@ -32,7 +32,6 @@ import {
   writeLegacyRootRuntimeCompatAliases,
   writeStableRootRuntimeAliases,
 } from "../../scripts/runtime-postbuild.mts";
-import { expectNoNodeFsScans } from "../../src/test-utils/fs-scan-assertions.js";
 import { resolveTestNodeExecPath } from "../../src/test-utils/node-process.js";
 import { readBuildIdFromBuildInfoForModuleUrl } from "../../src/version.js";
 import { createScriptTestHarness } from "./test-helpers.js";
@@ -166,42 +165,6 @@ describe("runtime postbuild static assets", () => {
     await expect(fs.readFile(path.join(distHookDir, "handler.js"), "utf8")).resolves.toBe(
       "export default () => {};\n",
     );
-  });
-
-  it("discovers repo static asset metadata without scanning extension directories", () => {
-    const payload = expectNoNodeFsScans<{
-      outputs: string[];
-      sources: string[];
-      packageOutputs: string[];
-    }>(`
-      const assets = await import("./scripts/lib/static-extension-assets.mts");
-      const discovered = assets.discoverStaticExtensionAssets();
-      const packageAssets = assets.discoverStaticExtensionAssets({ includeExternalPlugins: true });
-      return {
-        outputs: discovered.map(({ dest }) => dest),
-        sources: assets.listStaticExtensionAssetSources(),
-        packageOutputs: packageAssets.map(({ dest }) => dest),
-      };
-    `);
-
-    expect(payload.outputs).toEqual([
-      "dist/extensions/apple-fm/assets/AppleFoundationModels.swift",
-      "dist/extensions/code-mode-quickjs/assets/encoding.so",
-      "dist/extensions/code-mode-quickjs/assets/quickjs.wasm",
-      "dist/extensions/crabbox/assets/openclaw-worker-wallpaper.png",
-      "dist/extensions/onepassword/onepassword-op-path.js",
-      "dist/extensions/onepassword/onepassword-secret-id.js",
-      "dist/extensions/onepassword/onepassword-secret-ref-resolver.js",
-      "dist/extensions/vault/vault-secret-id.js",
-      "dist/extensions/vault/vault-secret-ref-resolver.js",
-    ]);
-    expect(payload.sources).not.toContain(
-      "extensions/diffs-language-pack/assets/viewer-runtime.js",
-    );
-    expect(payload.sources).not.toContain("extensions/diffs/assets/viewer-runtime.js");
-    expect(payload.sources).not.toContain("extensions/discord/assets/embedded-app-sdk.mjs");
-    expect(payload.packageOutputs).toContain("dist/extensions/discord/assets/embedded-app-sdk.mjs");
-    expect(payload.sources).toContain("extensions/crabbox/assets/openclaw-worker-wallpaper.png");
   });
 
   it("copies each package asset once with multiple Git index stages", async () => {

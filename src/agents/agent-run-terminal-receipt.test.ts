@@ -22,23 +22,6 @@ const visibleRerouteReceipt: AgentRunTerminalReceipt = {
 };
 
 describe("isProviderModelRerouted", () => {
-  it("keeps an equivalent vendor wire id from producing a model-switch fact", () => {
-    const requested = { provider: "arcee", model: "trinity-large-thinking" };
-    const effective = {
-      provider: "arcee",
-      model: "arcee-ai/trinity-large-thinking",
-      responseModel: "arcee-ai/trinity-large-thinking",
-    };
-    const rerouted = isProviderModelRerouted(requested, effective);
-    expect(rerouted).toBe(false);
-    expect(
-      formatAgentRunRouteChange(
-        { ...visibleRerouteReceipt, requested, effective, rerouted },
-        "run-1",
-      ),
-    ).toBeUndefined();
-  });
-
   describe("with a configured model row declaring response model equivalence", () => {
     const declaredConfig = (
       provider: string,

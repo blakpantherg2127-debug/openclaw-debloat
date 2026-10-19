@@ -3,7 +3,6 @@ import { createAdmittedRunOperatorAuthority } from "../agents/admitted-run-conte
 import { testing as cliBackendsTesting } from "../agents/cli-backends.test-support.js";
 import { prepareCliRunModelAuthority } from "../agents/cli-runner/run-admission.js";
 import type { RunCliAgentParams } from "../agents/cli-runner/types.js";
-import { resolveBundledStaticCatalogModel } from "../agents/embedded-agent-runner/model.static-catalog.js";
 import type { RunEmbeddedAgentInternalParams } from "../agents/embedded-agent-runner/run/internal-params.js";
 import { createAgentHarnessToolSurfaceRuntimeCore } from "../agents/harness/tool-surface-bridge.js";
 import { ProviderAuthError } from "../agents/model-auth-runtime-shared.js";
@@ -271,55 +270,6 @@ describe("session companion embedded invocation", () => {
         }
       } finally {
         preparation.mockRestore();
-        companion.dispose();
-      }
-    },
-  );
-
-  it.each(["catalog-only", "dynamic-discovery"])(
-    "uses the already prepared image model for %s without an extra resolution",
-    async (route) => {
-      const model = resolveBundledStaticCatalogModel({
-        provider: "mistral",
-        modelId: "mistral-medium-3-5",
-        cfg: { plugins: { entries: { mistral: { enabled: true } } } },
-        includeRuntimeDiscovery: true,
-      });
-      expect(model?.input).toContain("image");
-      if (!model) {
-        throw new Error("Expected the real bundled Mistral catalog row");
-      }
-      if (route === "catalog-only") {
-        resolveModelAsync.mockResolvedValue({ error: "Unknown model without bundled fallback" });
-      } else {
-        resolveModelAsync.mockRejectedValue(new Error("Unexpected additional dynamic discovery"));
-      }
-      const modelIo = vi.fn();
-      runEmbeddedAgent.mockImplementationOnce(async (params) => {
-        params.assertModelInput?.(model);
-        modelIo();
-        return { meta: { durationMs: 1, finalAssistantVisibleText: "The image is visible." } };
-      });
-      const companion = createCompanion();
-      const respond = vi.fn();
-      try {
-        await sessionCompanionHandlers["sessions.companion.ask"]!({
-          params: {
-            sessionKey: question.sessionKey,
-            question: "What does this show?",
-            attachments: [{ mimeType: "image/png", content: imageBase64 }],
-          },
-          client: { connId: "catalog-image-connection" },
-          context: { sessionCompanion: companion, getRuntimeConfig: () => ({}) },
-          respond,
-        } as never);
-        expect(respond).toHaveBeenCalledWith(
-          true,
-          expect.objectContaining({ answer: "The image is visible." }),
-        );
-        expect(modelIo).toHaveBeenCalledOnce();
-        expect(resolveModelAsync).not.toHaveBeenCalled();
-      } finally {
         companion.dispose();
       }
     },

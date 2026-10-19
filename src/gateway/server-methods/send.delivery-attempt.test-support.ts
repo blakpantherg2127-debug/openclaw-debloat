@@ -34,7 +34,7 @@ export function registerSendDeliveryAttemptTests({
   )(
     "refuses legacy cron $method delivery on $failure across the durable fence and handoff",
     async ({ method, failure }) => {
-      const sessionKey = "agent:main:slack:channel:C1";
+      const sessionKey = "agent:main:telegram:channel:C1";
       let deliveryCurrent = true;
       let uploadsEnabled = true;
       const beforeDeliveryAttempt = vi.fn(async () => {
@@ -72,7 +72,7 @@ export function registerSendDeliveryAttemptTests({
         } else if (method === "send") {
           mocks.deliverOutboundPayloads.mockImplementationOnce(async (params) => {
             await handoff(params);
-            return [{ channel: "slack", messageId: "unexpected-delivery" }];
+            return [{ channel: "telegram", messageId: "unexpected-delivery" }];
           });
         } else {
           mocks.sendPoll.mockImplementationOnce(async (params) => {
@@ -83,7 +83,7 @@ export function registerSendDeliveryAttemptTests({
       }
       try {
         const request = {
-          channel: "slack",
+          channel: "telegram",
           ...(method === "poll" ? {} : { sessionKey }),
           idempotencyKey: `scheduled-fence-${method}`,
         };

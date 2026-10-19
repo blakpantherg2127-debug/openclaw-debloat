@@ -1723,52 +1723,6 @@ finally:
     }
   });
 
-  it("regenerates nodes help when bundled canvas CLI help sources change", async () => {
-    const metadata = metadataFixture("openclaw-startup-metadata-signature-");
-    const { sourceRootDir: tempRoot, outputPath } = metadata;
-    let nodesRenderCount = 0;
-
-    const writeMetadata = async (): Promise<void> => {
-      await testing.writeCliStartupMetadata({
-        ...metadata,
-        renderBundledRootHelpText: async () => "Usage: openclaw\n",
-        ...sourceHelpRenderers,
-        renderSourceNodesHelpText: () => {
-          nodesRenderCount += 1;
-          return `Usage: openclaw nodes ${nodesRenderCount}\n`;
-        },
-      });
-    };
-
-    await writeMetadata();
-    await writeMetadata();
-    expect(nodesRenderCount).toBe(1);
-
-    const staleGeneratorMetadata = JSON.parse(readFileSync(outputPath, "utf8")) as Record<
-      string,
-      unknown
-    >;
-    staleGeneratorMetadata.generatorSignature = "stale-generator";
-    writeFileSync(outputPath, `${JSON.stringify(staleGeneratorMetadata, null, 2)}\n`, "utf8");
-
-    await writeMetadata();
-    expect(nodesRenderCount).toBe(2);
-
-    writeFixtureFile(
-      tempRoot,
-      "extensions/canvas/src/cli.ts",
-      "export const canvasCliHelp = 'canvas changed help';\n",
-    );
-
-    await writeMetadata();
-
-    const written = JSON.parse(readFileSync(outputPath, "utf8")) as {
-      nodesHelpText: string;
-    };
-    expect(nodesRenderCount).toBe(3);
-    expect(written.nodesHelpText).toContain("openclaw nodes 3");
-  });
-
   it("regenerates help when build version or commit changes", async () => {
     const metadata = metadataFixture("openclaw-startup-metadata-build-identity-");
     const { distDir, outputPath } = metadata;

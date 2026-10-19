@@ -124,29 +124,6 @@ describe("resolveApprovalOverGateway", () => {
     expect(hoisted.withOperatorApprovalsGatewayClient).not.toHaveBeenCalled();
   });
 
-  it.each([["googlechat", "Google Chat"]] as const)(
-    "derives the %s approval client label from channel metadata",
-    async (channel, label) => {
-      await resolveApprovalOverGateway({
-        cfg: {} as never,
-        approvalId: "approval-1",
-        approvalKind: "exec",
-        decision: "deny",
-        channel,
-        accountId: "default",
-        senderId: "owner",
-      });
-
-      const [gatewayClientOptions] = expectDefined(
-        hoisted.withOperatorApprovalsGatewayClient.mock.calls[0],
-        "gateway client call",
-      );
-      expect(gatewayClientOptions).toMatchObject({
-        clientDisplayName: `${label} approval (owner)`,
-      });
-    },
-  );
-
   it("preserves the raw id in the approval label for unknown channels", async () => {
     await resolveApprovalOverGateway({
       cfg: {} as never,
@@ -232,47 +209,6 @@ describe("resolveApprovalOverGateway", () => {
       { clientDisplayName: "Approval (unknown)" },
     );
     expect(hoisted.withOperatorApprovalsGatewayClient).not.toHaveBeenCalled();
-  });
-
-  it("sends channel custody to an injected canonical runtime", async () => {
-    const injectedRequest = vi.fn(async () => ({ applied: true, approval: recordedApproval }));
-    const scopedRequest = vi.fn();
-    const runtime = {
-      request: async <T>(): Promise<T> => {
-        scopedRequest();
-        throw new Error("unexpected scoped approval request");
-      },
-      requestRoute: vi.fn(),
-      routeCoordinator: { doesAccountHandleRequest: () => true } as never,
-      subscribe: vi.fn(),
-    } satisfies GatewayNativeApprovalRuntime;
-
-    await expect(
-      withGatewayNativeApprovalRuntime(runtime, () =>
-        resolveApprovalOverGateway({
-          cfg: {} as never,
-          approvalId: "approval-1",
-          approvalKind: "exec",
-          decision: "deny",
-          channel: "imessage",
-          accountId: "personal",
-          senderId: "owner",
-          gatewayRuntime: { request: injectedRequest },
-        }),
-      ),
-    ).resolves.toEqual({ applied: true, approval: recordedApproval });
-
-    expect(injectedRequest).toHaveBeenCalledWith(
-      "approval.resolve",
-      {
-        id: "approval-1",
-        kind: "exec",
-        decision: "deny",
-        reviewer: { channel: "imessage", accountId: "personal", senderId: "owner" },
-      },
-      { clientDisplayName: "iMessage approval (owner)" },
-    );
-    expect(scopedRequest).not.toHaveBeenCalled();
   });
 
   it("preserves protocol-valid boundary whitespace in canonical approval ids", async () => {

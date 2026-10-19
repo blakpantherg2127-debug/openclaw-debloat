@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAccountListHelpers } from "../channels/plugins/account-helpers.js";
 import type { ChannelGatewayContext } from "../channels/plugins/types.adapters.js";
 import type { ChannelPlugin } from "../channels/plugins/types.public.js";
-import { applyLegacyDoctorMigrations } from "../commands/doctor/shared/legacy-config-compat.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { createSubsystemLogger, runtimeForLogger } from "../logging/subsystem.js";
 import { createEmptyPluginRegistry } from "../plugins/registry.js";
@@ -125,30 +124,4 @@ describe("channel ownership startup", () => {
       await healthMonitor.waitForIdle();
     }
   });
-
-  it.each([
-    { authored: "Ops", owner: "ops", sibling: "main" },
-    { authored: "main", owner: "main", sibling: "patricia" },
-  ])(
-    "preserves legacy account owner $authored across migration and a persisted restart",
-    async ({ authored, owner, sibling }) => {
-      const raw = {
-        agents: { list: [{ id: authored }, { id: sibling }] },
-        channels: { discord: { enabled: true } },
-      };
-      const repaired = applyLegacyDoctorMigrations(raw, { sourceConfigBeforeMigrations: raw });
-      await start(repaired.next as OpenClawConfig);
-      expect(manager.getRuntimeSnapshot().channelAccounts.discord?.default).toMatchObject({
-        running: true,
-        connected: true,
-        lifecycle: "ready",
-        lastError: null,
-      });
-      expect(started).toHaveBeenCalledExactlyOnceWith("default", owner);
-      expect(repaired.next?.bindings).toContainEqual({
-        agentId: owner,
-        match: { channel: "discord", accountId: "default" },
-      });
-    },
-  );
 });

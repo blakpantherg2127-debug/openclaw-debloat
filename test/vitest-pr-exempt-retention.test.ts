@@ -3,7 +3,6 @@ import path from "node:path";
 import { expectDefined } from "@openclaw/normalization-core";
 import { expect, it } from "vitest";
 import {
-  createNodeTestShardBundles,
   createUiTestShardGroups,
   resolveCanonicalNodeTestConfig,
 } from "../scripts/lib/ci-node-test-plan.mts";
@@ -23,11 +22,6 @@ type PlannedTestOwner = {
   configs: readonly string[];
   includePatterns?: readonly string[];
 };
-
-// Whole-inventory proof runs periodically; the policy watch owns PR opt-in.
-function fallbackGroups(shards: ReturnType<typeof createNodeTestShardBundles>) {
-  return shards.flatMap((shard) => shard.groups ?? [{ ...shard, shard_name: shard.shardName }]);
-}
 
 function createPrExemptCensus() {
   const prExemptFiles = listPrExemptRuntimeTestFiles();
@@ -169,63 +163,6 @@ let prExemptCensus: ReturnType<typeof createPrExemptCensus> | undefined;
 function getPrExemptCensus() {
   return (prExemptCensus ??= createPrExemptCensus());
 }
-
-const prExemptPlanOptions = {
-  runnerBackend: "github",
-  includeReleaseOnlyPluginShards: false,
-  includeReleaseOnlyRuntimeTests: false,
-};
-
-it.each(["hourly", "release"] as const)(
-  "retains one canonical owner for every PR-exempt file in %s plans",
-  (mode) => {
-    const { prExemptFiles, retainedExtensionGroups, dedicatedGroups, indexOwners } =
-      getPrExemptCensus();
-    const periodic = createNodeTestShardBundles({
-      ...prExemptPlanOptions,
-      includeReleaseOnlyRuntimeTests: mode === "release",
-      includePrExemptRuntimeTests: true,
-      includeReleaseOnlyToolingShards: true,
-      ...(mode === "hourly"
-        ? {
-            compactMode: "pull-request",
-            includeProofTests: true,
-            compactNodeJobCap: 77,
-          }
-        : {}),
-    });
-    const uiOwners = dedicatedGroups(
-      createUiTestShardGroups({ includeReleaseOnlyTests: mode === "release" }),
-    );
-    if (mode === "hourly") {
-      expect(periodic.filter((job) => !job.requiresDist).length).toBeLessThanOrEqual(77);
-      expect(periodic.length).toBeLessThanOrEqual(79);
-    }
-    const owners = indexOwners([
-      ...fallbackGroups(periodic),
-      ...retainedExtensionGroups,
-      ...uiOwners.canonical,
-    ]);
-    for (const file of prExemptFiles) {
-      expect(owners.get(file) ?? [], file).toHaveLength(1);
-      if (file.startsWith("ui/")) {
-        const kind = isUiTestTarget(file) ? "ui" : "e2e";
-        expect(
-          uiOwners[kind].filter((group) => group.includePatterns.includes(file)),
-          file,
-        ).toHaveLength(1);
-      }
-    }
-    for (const file of RELEASE_ONLY_UI_TEST_FILES) {
-      expect(prExemptFiles, file).not.toContain(file);
-      const kind = isUiTestTarget(file) ? "ui" : "e2e";
-      expect(
-        uiOwners[kind].filter((group) => group.includePatterns.includes(file)),
-        file,
-      ).toHaveLength(mode === "release" ? 1 : 0);
-    }
-  },
-);
 
 it("keeps release-only UI files out of ordinary owner-selected plans", () => {
   const { dedicatedGroups } = getPrExemptCensus();

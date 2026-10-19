@@ -1,16 +1,11 @@
 /** Tests runtime secret auditing for externalized channel plugin surfaces. */
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
 import type { PluginManifestRecord } from "../plugins/manifest-registry.js";
 import { createPluginMetadataSnapshotFixture } from "../plugins/plugin-metadata.test-support.js";
 import type { PluginOrigin } from "../plugins/plugin-origin.types.js";
 import { getPath } from "./path-utils.js";
-import {
-  assertSecretOwnerAvailable,
-  isTrustedSecretSurfaceUnavailableError,
-} from "./runtime-degraded-state.js";
+import { assertSecretOwnerAvailable } from "./runtime-degraded-state.js";
 import { activateSecretsRuntimeSnapshot } from "./runtime.js";
 
 const {
@@ -44,11 +39,7 @@ vi.mock("../channels/plugins/bootstrap-registry.js", () => ({
   getBootstrapChannelSecrets: getBootstrapChannelSecretsMock,
 }));
 
-import {
-  asConfig,
-  loadAuthStoreWithProfiles,
-  setupSecretsRuntimeSnapshotTestHooks,
-} from "./runtime.test-support.ts";
+import { asConfig, setupSecretsRuntimeSnapshotTestHooks } from "./runtime.test-support.ts";
 
 const { prepareSecretsRuntimeSnapshot } = setupSecretsRuntimeSnapshotTestHooks();
 
@@ -82,10 +73,6 @@ function createQqBotConfig(accountId = "work") {
       },
     },
   };
-}
-
-function inactiveExecRef(id: string) {
-  return { source: "exec", provider: "vault", id };
 }
 
 function createExternalChannelRecord(id: ExternalizedChannelId): PluginManifestRecord {
@@ -133,31 +120,6 @@ function expectMetadataBackedContractsWereUsed(
   }
 }
 
-function expectResolvedPaths(config: OpenClawConfig, expected: Record<string, unknown>) {
-  for (const [pathKey, expectedValue] of Object.entries(expected)) {
-    expect(getPath(config, pathKey.split(".")), pathKey).toBe(expectedValue);
-  }
-}
-
-function setFixtureField(
-  record: Record<string, unknown>,
-  segments: string[],
-  value: unknown,
-): void {
-  const [key, ...rest] = segments;
-  if (!key) {
-    throw new Error("Missing fixture field");
-  }
-  if (!rest.length) {
-    record[key] = value;
-    return;
-  }
-  const next = record[key];
-  const child = isRecord(next) ? next : {};
-  record[key] = child;
-  setFixtureField(child, rest, value);
-}
-
 describe("secrets runtime externalized channel SecretRef audit", () => {
   beforeEach(() => {
     getBootstrapChannelSecretsMock.mockReset();
@@ -165,121 +127,6 @@ describe("secrets runtime externalized channel SecretRef audit", () => {
     loadBundledPublicArtifactMock.mockReset();
     loadBundledPublicArtifactMock.mockReturnValue(null);
     loadPluginMetadataSnapshotMock.mockReset();
-  });
-
-  it.each([true, false])("resolves only active channel credentials (active=%s)", async (active) => {
-    const records = configureExternalChannelRecords();
-    const channels: Record<string, unknown> = {};
-    const env: NodeJS.ProcessEnv = {};
-    const expected: Record<string, unknown> = {};
-    const warningPaths: string[] = [];
-    const accountId = active ? "work" : "disabled";
-    for (const id of EXTERNALIZED_CHANNEL_IDS) {
-      const fields = {
-        discord: [
-          "token",
-          "pluralkit.token",
-          ...(active ? ["voice.realtime.providers.openai.apiKey"] : []),
-          "voice.tts.providers.openai.apiKey",
-        ],
-        feishu: ["appSecret", "encryptKey", "verificationToken"],
-        msteams: ["appPassword"],
-        "nextcloud-talk": ["botSecret", "apiPassword"],
-        qqbot: ["clientSecret"],
-        zalo: ["botToken", "webhookSecret"],
-      }[id];
-      const settings: Record<string, unknown> = { enabled: active };
-      if (id === "discord") {
-        settings.pluralkit = { enabled: true };
-        settings.voice = { enabled: true };
-      } else if (id === "feishu") {
-        settings.connectionMode = "webhook";
-      } else if (id === "qqbot") {
-        settings.appId = "qqbot-app";
-      } else if (id === "zalo") {
-        settings.webhookUrl = "https://example.test/zalo";
-      }
-      const channel = structuredClone(settings);
-      const account = structuredClone(settings);
-      if (id !== "msteams") {
-        channel.accounts = {
-          ...(active && id !== "qqbot"
-            ? {
-                inherited: {
-                  enabled: true,
-                  ...(id === "feishu" ? { connectionMode: "webhook" } : {}),
-                },
-              }
-            : {}),
-          [accountId]: account,
-        };
-      }
-      channels[id] = channel;
-      for (const field of fields) {
-        for (const [record, prefix] of [
-          [channel, `channels.${id}`],
-          ...(id === "msteams" ? [] : [[account, `channels.${id}.accounts.${accountId}`] as const]),
-        ] as const) {
-          const key = `${prefix}.${field}`;
-          const refId = key.replaceAll(/[^a-z0-9]/gi, "_").toUpperCase();
-          const value = active ? ref(refId) : inactiveExecRef(refId);
-          setFixtureField(record, field.split("."), value);
-          env[refId] = `synthetic-${refId}`;
-          expected[key] = active ? env[refId] : value;
-          if (!active) {
-            warningPaths.push(key);
-          }
-        }
-      }
-    }
-    const snapshot = await prepareSecretsRuntimeSnapshot({
-      config: asConfig({ channels }),
-      env: active ? env : {},
-      ...(active
-        ? { includeAuthStoreRefs: false }
-        : {
-            agentDirs: ["/tmp/openclaw-agent-main"],
-            loadAuthStore: () => loadAuthStoreWithProfiles({}),
-          }),
-      loadablePluginOrigins: externalChannelOrigins(records),
-    });
-    for (const [key, value] of Object.entries(expected)) {
-      expect(getPath(snapshot.config, key.split(".")), key).toEqual(value);
-    }
-    expect(snapshot.warnings.map((warning) => warning.path)).toStrictEqual(warningPaths);
-    expectMetadataBackedContractsWereUsed();
-  });
-
-  it("resolves Feishu top-level appSecret SecretRef for the implicit default account", async () => {
-    const records = configureExternalChannelRecords(["feishu"]);
-    const snapshot = await prepareSecretsRuntimeSnapshot({
-      config: asConfig({
-        channels: {
-          feishu: {
-            enabled: true,
-            appId: "cli_default",
-            appSecret: ref("FEISHU_APP_SECRET"),
-            accounts: {
-              "resource-shrimp": {
-                enabled: true,
-                appId: "cli_resource",
-                appSecret: "inline-secret-here", // pragma: allowlist secret
-              },
-            },
-          },
-        },
-      }),
-      env: { FEISHU_APP_SECRET: "default-secret" },
-      includeAuthStoreRefs: false,
-      loadablePluginOrigins: externalChannelOrigins(records),
-    });
-
-    expectResolvedPaths(snapshot.config, {
-      "channels.feishu.appSecret": "default-secret",
-      "channels.feishu.accounts.resource-shrimp.appSecret": "inline-secret-here",
-    });
-    expect(snapshot.warnings).toStrictEqual([]);
-    expectMetadataBackedContractsWereUsed(["feishu"]);
   });
 
   it.each(["default", "named"] as const)(
@@ -421,61 +268,5 @@ describe("secrets runtime externalized channel SecretRef audit", () => {
         loadablePluginOrigins: externalChannelOrigins(records),
       }),
     ).rejects.toThrow(error);
-  });
-
-  it("publishes an unavailable Discord realtime provider owner as a typed redacted error", async () => {
-    const records = configureExternalChannelRecords(["discord"]);
-    const snapshot = await prepareSecretsRuntimeSnapshot({
-      config: asConfig({
-        channels: {
-          discord: {
-            accounts: {
-              work: {
-                enabled: true,
-                voice: {
-                  enabled: true,
-                  mode: "agent-proxy",
-                  realtime: {
-                    provider: "grok-voice",
-                    providers: {
-                      xai: { apiKey: ref("MISSING_XAI_REALTIME_API_KEY") },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      }),
-      env: {},
-      includeAuthStoreRefs: false,
-      allowUnavailableSecretOwners: true,
-      loadablePluginOrigins: externalChannelOrigins(records),
-    });
-
-    expect(snapshot.degradedOwners).toMatchObject([
-      {
-        ownerKind: "capability",
-        ownerId: "discord:voice:realtime:work:xai",
-        reason: "secret reference was not found",
-      },
-    ]);
-    activateSecretsRuntimeSnapshot(snapshot);
-
-    let failure: unknown;
-    try {
-      assertSecretOwnerAvailable("capability", "discord:voice:realtime:work:xai");
-    } catch (error) {
-      failure = error;
-    }
-    expect(isTrustedSecretSurfaceUnavailableError(failure)).toBe(true);
-    expect(failure).toMatchObject({
-      code: "SECRET_SURFACE_UNAVAILABLE",
-      ownerKind: "capability",
-      ownerId: "discord:voice:realtime:work:xai",
-      paths: ["channels.discord.accounts.work.voice.realtime.providers.xai.apiKey"],
-    });
-    expect(String(failure)).not.toContain("MISSING_XAI_REALTIME_API_KEY");
-    expectMetadataBackedContractsWereUsed(["discord"]);
   });
 });

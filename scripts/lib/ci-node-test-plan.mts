@@ -2811,18 +2811,9 @@ export function createVitestCacheWarmGroups(
       ...(
         [
           ["plugin", "src/plugins/contracts/registry.contract.test.ts"],
-          ["channel-surface", "src/channels/plugins/contracts/channel-catalog.contract.test.ts"],
-          [
-            "channel-config",
-            "src/channels/plugins/contracts/gateway-auth-artifact.contract.test.ts",
-          ],
           [
             "channel-registry",
             "src/channels/plugins/contracts/plugins-core.loader.contract.test.ts",
-          ],
-          [
-            "channel-session",
-            "src/channels/plugins/contracts/session-key-artifact.contract.test.ts",
           ],
         ] as const
       ).map(([name, file]) => ({

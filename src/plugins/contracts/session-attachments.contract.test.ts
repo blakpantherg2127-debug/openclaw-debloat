@@ -12,7 +12,6 @@ import { useSessionStoreTempDirs } from "../../test-utils/session-state-cleanup.
 import { normalizeSessionDeliveryState } from "../../utils/delivery-context.shared.js";
 import { sendPluginSessionAttachment } from "../host-hook-attachments.js";
 import { clearPluginLoaderCache } from "../loader.test-fixtures.js";
-import { createEmptyPluginRegistry } from "../registry-empty.js";
 import { createPluginRegistry } from "../registry.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../runtime.js";
 import type { PluginRuntime } from "../runtime/types.js";
@@ -420,35 +419,6 @@ describe("plugin session attachments", () => {
         ok: false,
         error:
           "session attachments require direct outbound delivery for channel telegram; " +
-          "channel uses gateway delivery",
-      });
-      expect(workflowMocks.sendMessage).not.toHaveBeenCalled();
-    });
-  });
-
-  it("rejects unloaded bundled gateway-mode channels before attachment delivery", async () => {
-    await withSessionStore(async ({ storePath, filePath }) => {
-      await writeSessionEntry(storePath, {
-        delivery: normalizeSessionDeliveryState({
-          context: { channel: "whatsapp", to: "+15551234567" },
-        }),
-      });
-      setActivePluginRegistry(createEmptyPluginRegistry());
-      workflowMocks.getChannelPlugin.mockReturnValue(
-        createOutboundTestPlugin({
-          id: "whatsapp",
-          outbound: { deliveryMode: "gateway" },
-        }),
-      );
-
-      await expect(
-        sendBundledSessionAttachment({
-          files: [{ path: filePath }],
-        }),
-      ).resolves.toEqual({
-        ok: false,
-        error:
-          "session attachments require direct outbound delivery for channel whatsapp; " +
           "channel uses gateway delivery",
       });
       expect(workflowMocks.sendMessage).not.toHaveBeenCalled();

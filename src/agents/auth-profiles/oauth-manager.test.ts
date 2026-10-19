@@ -33,7 +33,7 @@ import { oidcIdentity } from "./credential-fixtures.test-support.js";
 import { testing as externalAuthTesting } from "./external-auth.test-support.js";
 import { createOAuthManager } from "./oauth-manager.js";
 import { isSettledOAuthRefreshFailure, OAuthManagerRefreshError } from "./oauth-refresh-failure.js";
-import { isOAuthRefreshFence, isPendingOAuthRefreshFence } from "./oauth-refresh-marker.js";
+import { isPendingOAuthRefreshFence } from "./oauth-refresh-marker.js";
 import { loadPersistedAuthProfileStore } from "./persisted.js";
 import { withPersonalAuthProfileStore } from "./personal-store.js";
 import { removeAuthProfilesAcrossOwnerStores } from "./profiles.js";
@@ -852,11 +852,6 @@ describe("Copilot tenant boundaries", () => {
   function read(agentDir?: string) {
     return loadPersistedAuthProfileStore(agentDir)?.profiles[profileId];
   }
-  function manager(
-    refreshCredential: Parameters<typeof createOAuthManager>[0]["refreshCredential"],
-  ) {
-    return createTestManager({ refreshCredential });
-  }
 
   it("logout removes only stores that own the selected identity-less credential", async () => {
     await withOAuthAgentDirs("oauth-manager-copilot-", async ({ agentDir }) => {
@@ -870,111 +865,4 @@ describe("Copilot tenant boundaries", () => {
       expect(read()).toEqual(main);
     });
   });
-
-  it("resolves a newer main credential only for a compatible tenant upgrade", async () => {
-    await withOAuthAgentDirs("oauth-manager-copilot-", async ({ agentDir }) => {
-      const local = credential("acme.ghe.com", "child-fixture", Date.now() + 10 * 60_000);
-      const main = {
-        ...credential("https://acme.ghe.com/", "main-fixture", MAX_DATE_TIMESTAMP_MS),
-        accountId: "main-fixture-account",
-      };
-      save(local, agentDir);
-      save(main);
-      const refresh = vi.fn(async () => null);
-      const result = await manager(refresh).resolveOAuthAccess({
-        store: ensureAuthProfileStoreWithoutExternalProfiles(agentDir),
-        profileId,
-        credential: local,
-        agentDir,
-      });
-      expect(result?.apiKey).toBe(main.access);
-      expect(refresh).not.toHaveBeenCalled();
-      expect(read(agentDir)).toEqual(local);
-      expect(read()).toEqual(main);
-    });
-  });
-
-  it("persists local refresh without mirroring to another tenant", async () => {
-    const mainDomain = "other.ghe.com";
-    await withOAuthAgentDirs("oauth-manager-copilot-", async ({ agentDir }) => {
-      const local = credential("acme.ghe.com", "child-fixture", Date.now() - 60_000);
-      const main = credential(mainDomain, "main-fixture", Date.now() + 600_000);
-      const refreshed = {
-        ...local,
-        access: "refreshed-fixture",
-        refresh: "rotated-fixture",
-        expires: MAX_DATE_TIMESTAMP_MS,
-      };
-      save(local, agentDir);
-      save(main);
-      const refresh = vi.fn(async (input: OAuthCredential) => {
-        expect(input).toEqual(local);
-        return refreshed;
-      });
-      const result = await manager(refresh).resolveOAuthAccess({
-        store: ensureAuthProfileStoreWithoutExternalProfiles(agentDir),
-        profileId,
-        credential: local,
-        agentDir,
-      });
-      expect(result?.apiKey).toBe(refreshed.access);
-      expect(refresh).toHaveBeenCalledTimes(1);
-      expect(read(agentDir)).toEqual(refreshed);
-      expect(read()).toEqual(main);
-    });
-  });
-
-  it.each([
-    ["other.ghe.com", false],
-    ["https://acme.ghe.com/", true],
-  ] as const)(
-    "recovers failed refresh only within the same tenant (%s)",
-    async (mainDomain, sameTenant) => {
-      await withOAuthAgentDirs("oauth-manager-copilot-", async ({ agentDir }) => {
-        // Post-claim recovery requires positive identity, independently of tenant scope.
-        const local = {
-          ...credential("acme.ghe.com", "child-fixture", Date.now() - 60_000),
-          accountId: "shared-account-fixture",
-        };
-        const main = {
-          ...credential(mainDomain, "main-fixture", local.expires - 60_000),
-          accountId: "shared-account-fixture",
-        };
-        const renewed = { ...main, access: "renewed-fixture", expires: MAX_DATE_TIMESTAMP_MS };
-        save(local, agentDir);
-        save(main);
-        const refresh = vi.fn(async () => {
-          save(renewed);
-          throw new Error("simulated provider refresh failure");
-        });
-        const result = manager(refresh).resolveOAuthAccess({
-          store: ensureAuthProfileStoreWithoutExternalProfiles(agentDir),
-          profileId,
-          credential: local,
-          agentDir,
-        });
-        if (sameTenant) {
-          await expect(result).resolves.toMatchObject({ apiKey: renewed.access });
-        } else {
-          await expect(result).rejects.toThrow("OAuth token refresh failed");
-        }
-        expect(refresh).toHaveBeenCalledTimes(1);
-        const failed = read(agentDir);
-        expect(failed?.type).toBe("oauth");
-        if (failed?.type !== "oauth") {
-          throw new Error("expected durable failed OAuth refresh fence");
-        }
-        expect(isOAuthRefreshFence(failed)).toBe(true);
-        expect(isPendingOAuthRefreshFence(failed)).toBe(false);
-        expect(failed).toMatchObject({
-          provider: local.provider,
-          enterpriseUrl: local.enterpriseUrl,
-          accountId: local.accountId,
-        });
-        expect(failed.access).not.toContain(local.access);
-        expect(failed.refresh).not.toContain(local.refresh);
-        expect(read()).toEqual(renewed);
-      });
-    },
-  );
 });

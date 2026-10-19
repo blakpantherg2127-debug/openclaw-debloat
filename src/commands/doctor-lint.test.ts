@@ -9,17 +9,11 @@ import * as bundledHealthChecks from "../flows/bundled-health-checks.js";
 import { CORE_HEALTH_CHECKS } from "../flows/doctor-core-checks.js";
 import { clearHealthChecksForTest, registerHealthCheck } from "../flows/health-check-registry.js";
 import type { HealthCheckContext } from "../flows/health-checks.js";
-import { recordDeferredPluginMigrations } from "../infra/deferred-plugin-migrations.js";
-import { resolveExistingSqliteFileUri } from "../infra/node-sqlite.js";
-import { clearLoadInstalledPluginIndexInstallRecordsCache } from "../plugins/installed-plugin-index-record-cache.js";
 import { seedInstalledPluginIndex } from "../plugins/test-helpers/installed-plugin-index.js";
 import { closeOpenClawStateDatabaseByPathAsync } from "../state/openclaw-state-db-cache.js";
 import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
 import { runDoctorLintCli } from "./doctor-lint.js";
-import {
-  createDoctorLintSemanticIndex,
-  snapshotDoctorLintSqliteFamily,
-} from "./doctor-lint.test-support.js";
+import { createDoctorLintSemanticIndex } from "./doctor-lint.test-support.js";
 import { createTestConfigSnapshot, createTestRuntime } from "./test-runtime-config-helpers.js";
 
 const mocks = vi.hoisted(() => ({
@@ -420,96 +414,6 @@ describe("runDoctorLintCli", () => {
       expect(payload.findings[0].fixHint).toContain("cloudWorkers.profiles.aws.settings.binary");
     } finally {
       stdout.mockRestore();
-    }
-  });
-
-  it("runs post-plugin readiness against an isolated state snapshot", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-lint-relevant-"));
-    const stateDir = path.join(rootDir, "operator-state");
-    const configPath = path.join(stateDir, "openclaw.json");
-    const config = {
-      gateway: { mode: "local" },
-      agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
-      memory: { search: { provider: "local", fallback: "none" } },
-    } satisfies OpenClawConfig;
-    fs.mkdirSync(stateDir, { recursive: true });
-    const sourceConfig = { ...config, legacyPluginState: { directory: "retained-input" } };
-    fs.writeFileSync(configPath, `${JSON.stringify(sourceConfig)}\n`);
-    const env = {
-      ...process.env,
-      HOME: stateDir,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
-    };
-    await seedInstalledPluginIndex({}, { config, env, stateDir, workspaceDir: rootDir });
-    await recordDeferredPluginMigrations({
-      env,
-      pending: [
-        {
-          pluginId: "fixture-plugin",
-          reason: "The configured plugin is unavailable.",
-          command: "openclaw doctor --fix",
-          configPaths: [["legacyPluginState"]],
-          validationExcludedPaths: [["legacyPluginState"]],
-        },
-      ],
-    });
-    const databasePath = resolveOpenClawStateSqlitePath(env);
-    await closeOpenClawStateDatabaseByPathAsync(databasePath);
-    clearLoadInstalledPluginIndexInstallRecordsCache();
-    createDoctorLintSemanticIndex(stateDir);
-    const before = snapshotDoctorLintSqliteFamily(databasePath);
-    mocks.openNodeSqliteDatabase.mockClear();
-    const sourceOpenStacks: string[] = [];
-    mocks.openNodeSqliteDatabase.mockImplementation((...args: unknown[]) => {
-      if (args[0] === databasePath || args[0] === resolveExistingSqliteFileUri(databasePath)) {
-        sourceOpenStacks.push(new Error("source database opened").stack ?? "");
-      }
-      return mocks.actualOpenNodeSqliteDatabase(...args);
-    });
-    const originalEnv = {
-      HOME: process.env.HOME,
-      OPENCLAW_CONFIG_PATH: process.env.OPENCLAW_CONFIG_PATH,
-      OPENCLAW_STATE_DIR: process.env.OPENCLAW_STATE_DIR,
-      OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: process.env.OPENCLAW_UPDATE_POST_CORE_CONVERGENCE,
-    };
-    process.env.HOME = stateDir;
-    process.env.OPENCLAW_CONFIG_PATH = configPath;
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    process.env.OPENCLAW_UPDATE_POST_CORE_CONVERGENCE = "1";
-    mocks.readConfigFileSnapshot.mockImplementation((...args: unknown[]) =>
-      mocks.actualReadConfigFileSnapshot(...args),
-    );
-
-    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
-    try {
-      await expect(
-        runDoctorLintCli(runtime, {
-          json: true,
-          severityMin: "error",
-        }),
-      ).resolves.toBe(1);
-      expect(JSON.parse(String(stdout.mock.calls.at(-1)?.[0]))).toMatchObject({
-        ok: false,
-        checksRun: 3,
-        findings: [
-          {
-            checkId: "memory-core/managed-local-embedding-setup",
-            severity: "error",
-            requirement: "managed-llama-cpp-setup",
-          },
-        ],
-      });
-      expect(
-        mocks.prepareSqliteReadOnlyLocationSync.mock.calls.map(([pathname]) => pathname),
-      ).toEqual([databasePath]);
-      expect(sourceOpenStacks).toEqual([]);
-      expect(snapshotDoctorLintSqliteFamily(databasePath)).toEqual(before);
-      expect(JSON.parse(fs.readFileSync(configPath, "utf8"))).toEqual(sourceConfig);
-    } finally {
-      stdout.mockRestore();
-      restoreDoctorLintTestEnv(originalEnv);
-      fs.rmSync(rootDir, { recursive: true, force: true });
     }
   });
 

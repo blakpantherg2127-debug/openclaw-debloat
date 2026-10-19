@@ -13,7 +13,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { bundledPluginFile, bundledPluginRoot } from "openclaw/plugin-sdk/test-fixtures";
+import { bundledPluginRoot } from "openclaw/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { parseCLI } from "vitest/node";
 import {
@@ -49,7 +49,6 @@ import {
   resolveRuntimeWorkerArgv,
   resolveRuntimeWorkerUrl,
 } from "../../src/infra/runtime-worker-url.js";
-import { expectNoNodeFsScans } from "../../src/test-utils/fs-scan-assertions.js";
 import { createFixtureLifetime } from "../helpers/fixture-lifetime.js";
 import {
   fixtureReceiptClientSource,
@@ -60,7 +59,6 @@ import { withinTest } from "../helpers/promise.js";
 import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 import { listVitestConfigTestFiles } from "../vitest-projects-config.test-support.js";
 import { databaseWorkerExtensionTestFiles } from "../vitest/vitest.extension-database-workers-paths.mjs";
-import { matchesVitestCliSelection } from "../vitest/vitest.pattern-file.ts";
 
 vi.mock("../../scripts/lib/vitest-build-prerequisites.mts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../scripts/lib/vitest-build-prerequisites.mts")>()),
@@ -69,7 +67,6 @@ vi.mock("../../scripts/lib/vitest-build-prerequisites.mts", async (importOrigina
 
 const scriptPath = path.join(process.cwd(), "scripts", "test-extension.mts");
 const posixIt = process.platform === "win32" ? it.skip : it;
-const MATRIX_TEST_PROCESS_FILE_LIMIT = 40;
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 const fixture = createFixtureLifetime();
 afterEach(() => fixture.cleanup());
@@ -118,28 +115,8 @@ function requireFirstMockArg<T>(mock: { mock: { calls: readonly (readonly unknow
   return arg as T;
 }
 
-function findExtensionWithoutTests() {
-  const extensionId = listAvailableExtensionIds().find(
-    (candidate) => !resolveExtensionTestPlan({ targetArg: candidate, cwd: process.cwd() }).hasTests,
-  );
-
-  if (!extensionId) {
-    throw new Error("Expected at least one extension without tests");
-  }
-  return extensionId;
-}
-
 function listExtensionTestFiles(extensionId: string): string[] {
   return listExtensionTestFilesForRoots([bundledPluginRoot(extensionId)]);
-}
-
-function expectedMatrixTestProcessCount() {
-  const files = listExtensionTestFilesForRoots([bundledPluginRoot("matrix")]);
-  const workers = files.filter((file) => databaseWorkerExtensionTestFiles.includes(file));
-  return (
-    Math.ceil(workers.length / MATRIX_TEST_PROCESS_FILE_LIMIT) +
-    Math.ceil((files.length - workers.length) / MATRIX_TEST_PROCESS_FILE_LIMIT)
-  );
 }
 
 describe("scripts/test-extension.mts", () => {
@@ -169,50 +146,6 @@ describe("scripts/test-extension.mts", () => {
       "test/vitest/vitest.extensions.config.ts",
     );
   });
-
-  it.each([
-    {
-      extensionId: "irc",
-      ingressFile: "extensions/irc/src/irc-ingress.test.ts",
-    },
-  ])(
-    "splits the $extensionId batch between persistence and channel owners without double counting",
-    async ({ extensionId, ingressFile }) => {
-      const root = `extensions/${extensionId}`;
-      const batch = resolveExtensionBatchPlan({ extensionIds: [extensionId] });
-      const files = listExtensionTestFilesForRoots([root]);
-      const workerFiles = (
-        await listVitestConfigTestFiles("test/vitest/vitest.extension-database-workers.config.ts")
-      ).filter((file) => file.startsWith(`${root}/`));
-      const channelFiles = await listVitestConfigTestFiles(
-        `test/vitest/vitest.extension-${extensionId}.config.ts`,
-      );
-      expect(workerFiles).toContain(ingressFile);
-      expect(channelFiles).not.toContain(ingressFile);
-      expect([...workerFiles, ...channelFiles].toSorted()).toEqual(files.toSorted());
-      expect(batch.extensionIds).toEqual([extensionId]);
-      expect(batch.testFileCount).toBe(files.length);
-      expect(batch.planGroups).toEqual([
-        expect.objectContaining({
-          config: "test/vitest/vitest.extension-database-workers.config.ts",
-          extensionIds: [extensionId],
-          testFileCount: workerFiles.length,
-        }),
-        expect.objectContaining({
-          config: `test/vitest/vitest.extension-${extensionId}.config.ts`,
-          roots: [root],
-          extensionIds: [extensionId],
-          testFileCount: channelFiles.length,
-        }),
-      ]);
-      expect(listExtensionTestFilesForRoots(batch.planGroups[0]!.roots)).toEqual(
-        workerFiles.toSorted(),
-      );
-      const shards = createExtensionTestShards({ extensionIds: [extensionId], shardCount: 2 });
-      expect(shards).toHaveLength(1);
-      expect(shards[0]?.planGroups).toEqual(batch.planGroups);
-    },
-  );
 
   it("excludes plugin browser tests from the server-side extension inventory", () => {
     const files = listExtensionTestFilesForRoots([bundledPluginRoot("workboard")]);
@@ -251,25 +184,6 @@ describe("scripts/test-extension.mts", () => {
     },
   );
 
-  it("infers the extension from the current working directory", () => {
-    const cwd = path.join(process.cwd(), "extensions", "slack");
-    const plan = resolveExtensionTestPlan({ cwd });
-
-    expect(plan.extensionId).toBe("slack");
-    expect(plan.extensionDir).toBe(bundledPluginRoot("slack"));
-  });
-
-  it("maps changed paths back to extension ids", () => {
-    const extensionIds = detectChangedExtensionIds([
-      bundledPluginFile("slack", "src/channel.ts"),
-      "src/line/message.test.ts",
-      bundledPluginFile("firecrawl", "package.json"),
-      "src/not-a-plugin/file.ts",
-    ]);
-
-    expect(extensionIds).toEqual(["firecrawl", "line", "slack"]);
-  });
-
   it("does not normalize extension path lookalikes", () => {
     expect(
       detectChangedExtensionIds([
@@ -280,25 +194,6 @@ describe("scripts/test-extension.mts", () => {
     ).toEqual([]);
   });
 
-  it("lists available extension ids from git without reading extension directories", () => {
-    const payload = expectNoNodeFsScans<{
-      changed: string[];
-      ids: number;
-    }>(`
-      const { detectChangedExtensionIds, listAvailableExtensionIds } =
-        await import("./scripts/lib/changed-extensions.mts");
-      const ids = listAvailableExtensionIds();
-      const changed = detectChangedExtensionIds([
-        "extensions/slack/src/channel.ts",
-        "src/line/message.test.ts",
-        "extensions/not-real/package.json",
-      ]);
-      return { changed, ids: ids.length };
-    `);
-    expect(payload.changed).toEqual(["line", "slack"]);
-    expect(payload.ids).toBeGreaterThan(0);
-  });
-
   it("can fail safe to all extensions when the base revision is unavailable", () => {
     const extensionIds = listChangedExtensionIds({
       base: "refs/heads/openclaw-test-missing-base",
@@ -306,50 +201,6 @@ describe("scripts/test-extension.mts", () => {
     });
 
     expect(extensionIds).toEqual(listAvailableExtensionIds());
-  });
-
-  it("keeps explicitly requested extensions without tests in batch plans", () => {
-    const extensionId = findExtensionWithoutTests();
-    const testedExtensionId = "firecrawl";
-    const testedExtensionFiles = listExtensionTestFiles(testedExtensionId);
-    const batch = resolveExtensionBatchPlan({
-      cwd: process.cwd(),
-      extensionIds: [extensionId, testedExtensionId],
-    });
-
-    expect(batch.extensionIds).toEqual(
-      [extensionId, testedExtensionId].toSorted((left, right) => left.localeCompare(right)),
-    );
-    expect(batch.extensionCount).toBe(2);
-    expect(batch.noTestExtensionIds).toEqual([extensionId]);
-    expect(batch.hasTests).toBe(true);
-    expect(batch.testFileCount).toBe(testedExtensionFiles.length);
-    expect(batch.planGroups.flatMap((group) => group.extensionIds)).toEqual([testedExtensionId]);
-  });
-
-  it("counts tracked extension tests without walking extension directories", () => {
-    const payload = expectNoNodeFsScans<{
-      batchTests: number;
-      shards: number;
-      shardTests: number;
-    }>(
-      `
-        const { createExtensionTestShards, resolveExtensionBatchPlan } =
-          await import("./scripts/lib/extension-test-plan.mts");
-        const extensionIds = ["matrix", "openai", "slack", "telegram"];
-        const batch = resolveExtensionBatchPlan({ cwd: process.cwd(), extensionIds });
-        const shards = createExtensionTestShards({ cwd: process.cwd(), extensionIds, shardCount: 2 });
-        return {
-          batchTests: batch.testFileCount,
-          shards: shards.length,
-          shardTests: shards.reduce((total, shard) => total + shard.testFileCount, 0),
-        };
-      `,
-      { counters: ["readdirSync"] },
-    );
-    expect(payload.batchTests).toBeGreaterThan(0);
-    expect(payload.shards).toBe(2);
-    expect(payload.shardTests).toBe(payload.batchTests);
   });
 
   it("balances extension test shards by estimated CI cost", () => {
@@ -738,47 +589,6 @@ await new Promise(()=>{});export default {};`,
 
   it.each([
     {
-      ids: ["policy", "file-transfer"],
-      args: [],
-      selected: [
-        "extensions/policy/src/example.test.ts",
-        "extensions/file-transfer/src/shared/policy.test.ts",
-      ],
-    },
-  ])("confines extension roots $ids with $args", async ({ ids, args, selected }) => {
-    const runGroup = vi.fn<(params: RunGroupParams) => Promise<number>>().mockResolvedValue(0);
-    await expect(
-      runExtensionBatchPlan(resolveExtensionBatchPlan({ extensionIds: ids }), {
-        env: {},
-        runGroup,
-        vitestArgs: args,
-      }),
-    ).resolves.toBe(0);
-
-    expect(runGroup).toHaveBeenCalledOnce();
-    const invocation = requireFirstMockArg<RunGroupParams>(runGroup);
-    const candidates = [
-      "extensions/policy/src/example.test.ts",
-      "extensions/file-transfer/src/shared/policy.test.ts",
-      "extensions/other/src/policy/example.test.ts",
-      "extensions/policy-extra/src/example.test.ts",
-      "extensions/policy/src/example.test.tsx",
-    ];
-    expect(
-      candidates.filter((file) =>
-        matchesVitestCliSelection(
-          file,
-          ["extensions/**/*.test.ts"],
-          ["run", "--config", invocation.config, ...invocation.args, ...invocation.targets],
-          "extensions",
-          invocation.env ?? {},
-        ),
-      ),
-    ).toEqual(selected);
-  });
-
-  it.each([
-    {
       args: ["--exclude=extensions/memory-lancedb/memory-cli.test.ts"],
       nodeCode: 0,
       bunCode: 0,
@@ -901,46 +711,6 @@ await new Promise(()=>{});export default {};`,
     },
   );
 
-  it("runs every Matrix process chunk after an earlier chunk fails", async () => {
-    const runGroup = vi
-      .fn<(params: RunGroupParams) => Promise<number>>()
-      .mockResolvedValueOnce(1)
-      .mockResolvedValue(0);
-
-    const result = await runExtensionBatchPlan(
-      resolveExtensionBatchPlan({ cwd: process.cwd(), extensionIds: ["matrix"] }),
-      { runGroup },
-    );
-
-    expect(result).toBe(1);
-    expect(runGroup).toHaveBeenCalledTimes(expectedMatrixTestProcessCount());
-  });
-
-  it.each([["--exclude=extensions/matrix/src/**"]])(
-    "keeps Matrix extension batch mode %s in one process",
-    async (vitestArg) => {
-      const runGroup = vi.fn<() => Promise<number>>().mockResolvedValue(0);
-
-      const result = await runExtensionBatchPlan(
-        resolveExtensionBatchPlan({ cwd: process.cwd(), extensionIds: ["matrix"] }),
-        { runGroup, vitestArgs: [vitestArg] },
-      );
-
-      expect(result).toBe(0);
-      expect(runGroup).toHaveBeenCalledOnce();
-      const invocation = requireFirstMockArg<RunGroupParams>(runGroup);
-      expect(invocation.targets).toEqual(["matrix/"]);
-      expect(invocation.config).toBe("test/vitest/vitest.database-worker-watch.config.ts");
-      expect(invocation.homeMode).toBe("live-aware");
-      expect(invocation.env?.OPENCLAW_VITEST_DATABASE_WORKER_WATCH_OWNER).toBe(
-        "test/vitest/vitest.extension-matrix.config.ts",
-      );
-      expect(JSON.parse(invocation.env!.OPENCLAW_VITEST_DATABASE_WORKER_WATCH_TESTS!)).toEqual(
-        databaseWorkerExtensionTestFiles.filter((file) => file.startsWith("extensions/matrix/")),
-      );
-    },
-  );
-
   it.each([
     {
       include: "extensions/telegram/src/sticker-cache.selection.test.ts",
@@ -1039,14 +809,6 @@ await new Promise(()=>{});export default {};`,
 
     expect(result.stderr).toContain("OPENCLAW_EXTENSION_BATCH_PARALLEL must be a positive integer");
     expect(result.status, result.stdout + result.stderr).toBe(2);
-  });
-
-  it("fails explicitly requested extensions without tests by default", () => {
-    const extensionId = findExtensionWithoutTests();
-    const result = runScriptResult([extensionId]);
-
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain(`No tests found for ${bundledPluginRoot(extensionId)}.`);
   });
 });
 

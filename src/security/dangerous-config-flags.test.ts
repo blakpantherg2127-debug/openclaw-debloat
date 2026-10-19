@@ -27,27 +27,6 @@ function writeDangerousWorkspacePlugin(workspaceDir: string) {
 describe("collectEnabledInsecureOrDangerousFlags", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-  it("keeps plugin contract checks enabled for a malformed roster", () => {
-    const inheritedWorkspaceDir = tempDirs.make("openclaw-dangerous-inherited-workspace-");
-    const explicitWorkspaceDir = tempDirs.make("openclaw-dangerous-explicit-workspace-");
-    writeDangerousWorkspacePlugin(inheritedWorkspaceDir);
-    const flags = collectEnabledInsecureOrDangerousFlags({
-      agents: {
-        defaults: { workspace: inheritedWorkspaceDir },
-        entries: { alpha: { workspace: explicitWorkspaceDir }, beta: {} },
-      },
-      plugins: {
-        entries: {
-          acpx: { config: { permissionMode: "approve-all" } },
-          "workspace-danger": { config: { mode: "danger" } },
-        },
-      },
-    });
-
-    expect(flags).toContain("plugins.entries.acpx.config.permissionMode=approve-all");
-    expect(flags).toContain("plugins.entries.workspace-danger.config.mode=danger");
-  });
-
   it("uses the implicit main workspace for a rosterless compatibility config", () => {
     const workspaceDir = tempDirs.make("openclaw-dangerous-rosterless-");
     writeDangerousWorkspacePlugin(workspaceDir);

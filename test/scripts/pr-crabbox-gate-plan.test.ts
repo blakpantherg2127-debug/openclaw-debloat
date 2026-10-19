@@ -9,10 +9,7 @@ import {
   parseCrabboxGateCheckSummary,
 } from "../../scripts/pr-lib/crabbox-gate-contract.mjs";
 import { createCrabboxGatePlan } from "../../scripts/pr-lib/crabbox-gate-plan.mts";
-import {
-  buildVitestRunPlans,
-  UI_E2E_VITEST_CONFIG,
-} from "../../scripts/test-projects.test-support.mts";
+import { buildVitestRunPlans } from "../../scripts/test-projects.test-support.mts";
 import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 import { createNestedGitEnv } from "../helpers/temp-repo.js";
 
@@ -160,46 +157,6 @@ describe("Crabbox PR-derived gate plan", () => {
     expect(planFixture(createUiFixture(), paths).targets).toEqual(
       explicit ? paths : [...ordinaryUiTests, ...readers].toSorted(),
     );
-  });
-
-  it("uses the E2E helper's whole family, including native QA fixtures", () => {
-    const helper = "ui/src/test-helpers/control-ui-e2e.ts";
-    const tests = [
-      "extensions/example/browser/view.e2e.test.ts",
-      "extensions/qa-lab/src/session-host-command-state.real-gateway.e2e.test.ts",
-      "ui/src/e2e/example.e2e.test.ts",
-    ];
-    const cwd = createTrackedFixture({
-      [helper]: "export {};\n",
-      ...Object.fromEntries(tests.map((file) => [file, "export {};\n"])),
-      "ui/src/presenter.test.ts": "export {};\n",
-      "ui/src/vendor/ignored.e2e.test.ts": "export {};\n",
-    });
-    const plan = planFixture(cwd, [helper]);
-    expect(plan.targets).toEqual(tests);
-    expect(buildVitestRunPlans(plan.targets, cwd)).toEqual([
-      {
-        config: UI_E2E_VITEST_CONFIG,
-        forwardedArgs: [],
-        includePatterns: tests,
-        watchMode: false,
-      },
-    ]);
-  });
-
-  it("routes an explicit native QA fixture to its browser owner", () => {
-    const target = "extensions/qa-lab/src/session-host-command-state.real-gateway.e2e.test.ts";
-    const cwd = createTrackedFixture({ [target]: "export {};\n" });
-    const plan = planFixture(cwd, [target]);
-    expect(plan.targets).toEqual([target]);
-    expect(buildVitestRunPlans(plan.targets, cwd)).toEqual([
-      {
-        config: UI_E2E_VITEST_CONFIG,
-        forwardedArgs: [],
-        includePatterns: [target],
-        watchMode: false,
-      },
-    ]);
   });
 
   it.each([

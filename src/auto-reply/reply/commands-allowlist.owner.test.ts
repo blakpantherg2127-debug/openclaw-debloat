@@ -10,10 +10,7 @@ import {
   stageActivePluginRegistry,
 } from "../../plugins/runtime.js";
 import { createDeferredCore } from "../../shared/deferred.js";
-import {
-  linkUserChannelIdentity,
-  unlinkUserChannelIdentity,
-} from "../../state/user-channel-identities.js";
+import { unlinkUserChannelIdentity } from "../../state/user-channel-identities.js";
 import { setUserProfileRole } from "../../state/user-profile-writes.worker.js";
 import {
   createChannelTestPluginBase,
@@ -69,7 +66,6 @@ beforeEach(({ onTestFinished }) => {
 const mutations = [
   { action: "add", target: "--store", revocation: "demote" },
   { action: "remove", target: "--store", revocation: "unlink" },
-  { action: "add", target: "", revocation: "reassign" },
 ] as const;
 
 it.each(
@@ -150,9 +146,6 @@ it.each(
             setUserProfileRole(admin.profile.id, "member");
           } else {
             unlinkUserChannelIdentity(admin.profile.id, admin.identity);
-            if (revocation === "reassign") {
-              linkUserChannelIdentity(admins[1]!.profile.id, admin.identity);
-            }
           }
           params.command.assertOwnerCurrent = () => {};
         }

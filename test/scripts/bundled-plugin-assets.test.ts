@@ -11,7 +11,6 @@ import {
   runBundledPluginAssetHooks,
 } from "../../scripts/bundled-plugin-assets.mts";
 import * as managedCommands from "../../scripts/lib/managed-child-process.mts";
-import { listGeneratedExtensionAssetSources } from "../../scripts/lib/static-extension-assets.mts";
 import {
   createRunNodePathClassifier,
   isBuildRelevantRunNodePath,
@@ -72,46 +71,6 @@ describe("bundled plugin assets", () => {
         write: false,
       }),
     );
-  });
-
-  it("discovers the Discord SDK hook for standalone asset preparation", async () => {
-    const hooks = await readBundledPluginAssetHooks({
-      phase: "build",
-      plugins: ["discord"],
-      rootDir: process.cwd(),
-    });
-
-    expect(hooks).toMatchObject([
-      {
-        command: "node --import ../../scripts/tsx.mjs ../../scripts/build-discord-activity-sdk.mts",
-        packageName: "@openclaw/discord",
-        phase: "build",
-        pluginId: "discord",
-      },
-    ]);
-  });
-
-  it("keeps build-generated static assets out of the source watcher", async () => {
-    const rootDir = process.cwd();
-    const hooks = await readBundledPluginAssetHooks({ phase: "build", rootDir });
-    const generatedAssetSources = listGeneratedExtensionAssetSources({ rootDir });
-
-    for (const hook of hooks) {
-      const pluginPath = path.relative(rootDir, hook.pluginDir).replaceAll(path.sep, "/");
-      expect(
-        generatedAssetSources.some((source) => source.startsWith(`${pluginPath}/`)),
-        `${hook.pluginId} build hook must declare at least one generated output`,
-      ).toBe(true);
-    }
-
-    expect(generatedAssetSources).toContain("extensions/canvas/src/host/a2ui/.bundle.hash");
-    expect(generatedAssetSources).toContain("extensions/canvas/src/host/a2ui/a2ui.bundle.js");
-    expect(generatedAssetSources).toContain("extensions/discord/assets/embedded-app-sdk.mjs");
-    for (const source of generatedAssetSources) {
-      expect(isBuildRelevantRunNodePath(source), source).toBe(false);
-      expect(isRestartRelevantRunNodePath(source), source).toBe(false);
-    }
-    expect(isRestartRelevantRunNodePath("extensions/discord/src/activities/http.ts")).toBe(true);
   });
 
   it.each(["packages/llm-core/src/types.ts"])("rebuilds the root runtime for %s", (source) => {

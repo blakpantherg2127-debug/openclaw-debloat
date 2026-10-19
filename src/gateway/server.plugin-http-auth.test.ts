@@ -49,26 +49,6 @@ function claimingPlugin(paths?: string[]) {
     return !paths || paths.includes(pathname) ? respond(res, "plugin-owned") : false;
   });
 }
-function withMattermost(callbackPath: string, run: ServerOptions["run"]) {
-  return withTempConfig({
-    cfg: {
-      gateway: { trustedProxies: [] },
-      channels: { mattermost: { commands: { callbackPath } } },
-    },
-    run: async () =>
-      run(
-        createTestGatewayServer({
-          resolvedAuth: AUTH_TOKEN,
-          overrides: {
-            handlePluginRequest: claimingPlugin([
-              "/api/channels/mattermost/command",
-              "/api/channels/nostr/default/profile",
-            ]),
-          },
-        }),
-      ),
-  });
-}
 
 describe("gateway plugin HTTP auth boundary", () => {
   beforeAll(async () => {
@@ -181,20 +161,6 @@ describe("gateway plugin HTTP auth boundary", () => {
       expect(allowed).toEqual([true]);
     },
   );
-
-  test("allows unauthenticated Mattermost callbacks while protecting other channel routes", async () => {
-    await withMattermost("/api/channels/mattermost/command", async (server) => {
-      const callback = await sendRequest(server, {
-        path: "/api/channels/mattermost/command",
-        method: "POST",
-      });
-      expect(callback.res.statusCode).toBe(200);
-      expect(callback.getBody()).toBe("plugin-owned");
-      expectUnauthorizedResponse(
-        await sendRequest(server, { path: "/api/channels/nostr/default/profile" }),
-      );
-    });
-  });
 
   test("does not bypass auth when mattermost callbackPath names another channel", async () => {
     const plugin = claimingPlugin(["/api/channels/nostr/default/profile"]);

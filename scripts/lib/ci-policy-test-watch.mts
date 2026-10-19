@@ -120,7 +120,13 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
   })),
   {
     testFile: "test/scripts/crabbox-wrapper.test.ts",
-    watchGlobs: [],
+    watchGlobs: [
+      "scripts/crabbox-source-capsule.mts",
+      "scripts/crabbox-source-receiver.mts",
+      "scripts/crabbox-staging-artifacts.mts",
+      "scripts/crabbox-staging-claims.mts",
+      "scripts/crabbox-staging.mts",
+    ],
   },
   ...[
     "src/commands/agents.roles.test.ts",
@@ -129,14 +135,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
     testFile,
     watchGlobs: ["docs/reference/templates/roles/**"],
   })),
-  {
-    testFile: "src/gateway/server-methods/send.scheduled-reads.integration.test.ts",
-    watchGlobs: ["extensions/discord/src/**/*.ts"],
-  },
-  {
-    testFile: "src/system-agent/setup-inference.groq-external.integration.test.ts",
-    watchGlobs: ["extensions/groq/**"],
-  },
   ...[
     "src/agents/embedded-agent-runner/model.test.ts",
     "src/gateway/talk/handlers/client-native-control.test.ts",
@@ -504,10 +502,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
     ],
   },
   {
-    testFile: "src/commands/agents.identity.persistence.test.ts",
-    watchGlobs: ["extensions/nextcloud-talk/assets/icon.png"],
-  },
-  {
     testFile: "src/commands/doctor-agent-memory-schema.test.ts",
     watchGlobs: ["src/infra/sqlite-integrity.worker.ts"],
   },
@@ -539,10 +533,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
       "src/state/openclaw-state-worker-runtime.ts",
       "src/state/openclaw-state.worker.ts",
     ],
-  },
-  {
-    testFile: "src/commands/models/auth.minimax-chat.test.ts",
-    watchGlobs: ["extensions/minimax/index.ts"],
   },
   {
     testFile: "src/commands/status.memory-presence.worker.test.ts",
@@ -771,10 +761,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
       "src/state/openclaw-state-read.worker.ts",
       "src/state/user-profiles.worker.ts",
     ],
-  },
-  {
-    testFile: "src/gateway/server-methods/send.scheduled-reads.integration.test.ts",
-    watchGlobs: ["extensions/discord/api.ts"],
   },
   ...[
     "src/gateway/server-methods/sessions-describe-catalog.test.ts",
@@ -1011,10 +997,7 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
       "src/state/openclaw-agent-execution.worker.ts",
     ],
   })),
-  ...[
-    "src/infra/outbound/conversation-delivery.queue-admission.test.ts",
-    "src/infra/outbound/delivery-queue-entry-state.test.ts",
-  ].map((testFile): PolicyTestWatch => ({
+  ...["src/infra/outbound/delivery-queue-entry-state.test.ts"].map((testFile): PolicyTestWatch => ({
     testFile,
     watchGlobs: [
       "src/infra/delivery-queue.worker.ts",
@@ -1217,10 +1200,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
     ],
   })),
   {
-    testFile: "src/system-agent/setup-inference.groq-external.integration.test.ts",
-    watchGlobs: ["src/plugin-sdk/provider-entry.ts", "src/plugin-sdk/provider-model-metadata.ts"],
-  },
-  {
     testFile: "src/system-agent/setup-lifetime.test.ts",
     watchGlobs: [
       "docs/reference/templates/AGENTS.md",
@@ -1229,10 +1208,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
       "docs/reference/templates/SOUL.md",
       "docs/reference/templates/USER.md",
     ],
-  },
-  {
-    testFile: "src/tts/tts-summary.static-catalog.test.ts",
-    watchGlobs: ["extensions/kimi-coding/openclaw.plugin.json"],
   },
   {
     testFile: "test/e2e/qa-lab/runtime/gateway-support-export-runtime.test.ts",
@@ -1315,10 +1290,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
     watchGlobs: ["extensions/qa-lab/test-api.ts"],
   },
   {
-    testFile: "src/commands/doctor-config-flow.canvas-migration.test.ts",
-    watchGlobs: ["extensions/canvas/src/config-migration.ts"],
-  },
-  {
     testFile: "src/gateway/gateway-active-memory.test.ts",
     watchGlobs: ["extensions/active-memory/recall.ts"],
   },
@@ -1378,10 +1349,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
       "src/commands/doctor-lint.native-capture.test-support.ts",
       "src/cli/run-main-plugin-cache.ts",
     ],
-  },
-  {
-    testFile: "src/gateway/server.models-native-retirement.test.ts",
-    watchGlobs: ["extensions/xai/openclaw.plugin.json"],
   },
   {
     testFile: "src/gateway/gateway-concurrent-streams.test.ts",
@@ -1630,10 +1597,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
     ],
   },
   {
-    testFile: "src/gateway/server.xai-fallback.test.ts",
-    watchGlobs: ["extensions/xai/index.ts"],
-  },
-  {
     testFile: "src/gateway/session-activity-summaries.test.ts",
     watchGlobs: ["src/config/sessions/session-cold-storage-worker.ts"],
   },
@@ -1653,10 +1616,6 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
       "src/config/sessions/session-transcript-reconcile.worker.ts",
     ],
   },
-  {
-    testFile: "src/gateway/setup-inference.first-signin.integration.test.ts",
-    watchGlobs: ["extensions/github-copilot/index.ts"],
-  },
   ...[
     "src/gateway/worker-environments/prepared-environment-store.test.ts",
     "src/gateway/worker-environments/prepared-pool.test.ts",
@@ -1671,6 +1630,9 @@ const policyTestWatches: readonly PolicyTestWatch[] = [
   {
     testFile: "src/gateway/worker-environments/provider-crabbox-runtime-preflight.test.ts",
     watchGlobs: [
+      "extensions/crabbox/src/crabbox-worker-provider.ts",
+      "extensions/crabbox/src/crabbox-worker-preflight.ts",
+      "extensions/crabbox/src/crabbox-worker-provision-commands.ts",
       "src/gateway/worker-environments/store.worker.ts",
       "src/gateway/worker-environments/store.kernel.ts",
     ],

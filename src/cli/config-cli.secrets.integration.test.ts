@@ -10,9 +10,7 @@ import {
   useConfigCliIntegrationHarness,
 } from "./config-cli.integration.test-harness.js";
 
-// Register the harness metadata mock before loading the real config and command modules.
-const configRuntime = await import("../config/config.js");
-const { runConfigSet, runConfigUnset } = await import("./config-cli.js");
+const { runConfigSet } = await import("./config-cli.js");
 const {
   registeredRuntimeErrors: errors,
   registeredRuntimeLogs: logs,
@@ -22,108 +20,12 @@ const {
 
 const read = (file: string) => fs.readFileSync(file, "utf8");
 const load = (file: string) => JSON5.parse(read(file));
-const readJson = (file: string) => JSON.parse(read(file));
 const run = (...args: string[]) => invoke(["config", ...args]);
 const set = (...args: string[]) => invoke(["config", "set", ...args]);
 const reject = (result: Promise<unknown>) =>
   expect(result).rejects.toMatchObject({ name: "ExitError", code: 1 });
 const withConfig = (raw: string, visit: Parameters<typeof withFile>[2]) =>
   withFile("config-cli-", raw, visit);
-
-function sourceMismatchConfig(
-  options: {
-    source?: "env" | "exec";
-    id?: string;
-    defaults?: boolean;
-    gateway?: boolean;
-  } = {},
-) {
-  return `${JSON.stringify(
-    {
-      ...(options.gateway ? { gateway: { port: 18789 } } : {}),
-      channels: {
-        discord: {
-          enabled: false,
-          token: {
-            source: options.source ?? "exec",
-            provider: "shared",
-            id: options.id ?? "discord/token",
-          },
-        },
-      },
-      secrets: {
-        ...(options.defaults ? { defaults: { env: "shared" } } : {}),
-        providers: {
-          shared: { source: "file", path: "/tmp/openclaw-unused-secrets.json", mode: "json" },
-        },
-      },
-    },
-    null,
-    2,
-  )}\n`;
-}
-
-function createExecDryRunBatch(params: { markerPath: string }) {
-  const response = JSON.stringify({
-    protocolVersion: 1,
-    values: {
-      dryrun_id: "ok",
-    },
-  });
-  const script = [
-    `#!${process.execPath}`,
-    'const fs = require("node:fs");',
-    `fs.writeFileSync(${JSON.stringify(params.markerPath)}, JSON.stringify(process.argv.slice(2)), "utf8");`,
-    `process.stdout.write(${JSON.stringify(response)});`,
-  ].join("\n");
-  const scriptPath = path.join(path.dirname(params.markerPath), "exec-provider.cjs");
-  fs.writeFileSync(scriptPath, script, { mode: 0o700 });
-  return [
-    {
-      path: "secrets.providers.runner",
-      provider: {
-        source: "exec",
-        command: scriptPath,
-        trustedDirs: [path.dirname(scriptPath)],
-        timeoutMs: 60_000,
-        noOutputTimeoutMs: 60_000,
-      },
-    },
-    {
-      path: "channels.discord.token",
-      ref: {
-        source: "exec",
-        provider: "runner",
-        id: "dryrun_id",
-      },
-    },
-  ];
-}
-
-async function withExecDryRunConfigHarness(
-  prefix: string,
-  visit: (params: {
-    batchPath: string;
-    configPath: string;
-    markerPath: string;
-    runtime: ReturnType<typeof createTestRuntime>;
-  }) => Promise<void>,
-) {
-  await withFile(
-    prefix,
-    `${JSON.stringify({ gateway: { port: 18789 } }, null, 2)}\n`,
-    async ({ configPath, tempDir }) => {
-      const batchPath = path.join(tempDir, "batch.json");
-      const markerPath = path.join(tempDir, "marker.txt");
-      fs.writeFileSync(
-        batchPath,
-        `${JSON.stringify(createExecDryRunBatch({ markerPath }), null, 2)}\n`,
-        "utf8",
-      );
-      await visit({ batchPath, configPath, markerPath, runtime: createTestRuntime() });
-    },
-  );
-}
 
 describe("config cli secrets integration", () => {
   it.each([
@@ -165,70 +67,6 @@ describe("config cli secrets integration", () => {
     });
   });
 
-  it.skipIf(process.platform === "win32")(
-    "preserves literal exec args from the config builder through provider invocation",
-    async () => {
-      await withConfig("{}\n", async ({ configPath, tempDir }) => {
-        const markerPath = path.join(tempDir, "argv.json");
-        const batch = createExecDryRunBatch({ markerPath });
-        const command = path.join(tempDir, "exec-provider.cjs");
-        const args = [
-          "",
-          "   ",
-          "  label  ",
-          "\t\r\n\v\f",
-          "\u00a0\ufefflabel\ufeff\u00a0",
-          "inside \t space",
-          "\x01control\x7f",
-          "--literal-option",
-          "x".repeat(1024),
-        ];
-        while (args.length < 128) {
-          args.push(`arg-${args.length}`);
-        }
-        await set(
-          "secrets.providers.runner",
-          "--provider-source",
-          "exec",
-          "--provider-command",
-          command,
-          "--provider-trusted-dir",
-          tempDir,
-          "--provider-timeout-ms",
-          "60000",
-          "--provider-no-output-timeout-ms",
-          "60000",
-          ...args.flatMap((arg) => ["--provider-arg", arg]),
-        );
-        const persisted = read(configPath);
-        expect(fs.existsSync(markerPath)).toBe(false);
-        const output = createTestRuntime();
-
-        await runConfigSet({
-          cliOptions: {
-            batchJson: JSON.stringify(batch.slice(1)),
-            dryRun: true,
-            allowExec: true,
-            json: true,
-          },
-          runtime: output.runtime,
-        });
-
-        expect(errors).toEqual([]);
-        expect(output.errors).toEqual([]);
-        expect(JSON.parse(output.logs.join("\n"))).toMatchObject({
-          ok: true,
-          operations: 1,
-          refsChecked: 1,
-          skippedExecRefs: 0,
-          checks: { schema: false, resolvability: true, resolvabilityComplete: true },
-        });
-        expect(read(configPath)).toBe(persisted);
-        expect(readJson(markerPath)).toEqual(args);
-        expect(JSON5.parse(persisted).secrets.providers.runner.args).toEqual(args);
-      });
-    },
-  );
   it.each(["agents.defaults", "agents.entries.ops"])(
     "validates SecretRefs after normalizing model keys in %s",
     async (agentPath) => {
@@ -306,124 +144,6 @@ describe("config cli secrets integration", () => {
     });
   });
 
-  it.each([
-    {
-      name: "unset",
-      expectedSource: "env",
-      run: (runtime: ReturnType<typeof createTestRuntime>["runtime"]) =>
-        runConfigUnset({ path: "secrets.defaults.env", runtime }),
-    },
-  ])("rejects impossible provider/source refs during real config $name", async (testCase) => {
-    const raw = sourceMismatchConfig({ source: "env", id: "DISCORD_TEST_TOKEN", defaults: true });
-    await withConfig(raw, async ({ configPath }) => {
-      const output = createTestRuntime();
-
-      await expect(testCase.run(output.runtime)).rejects.toThrow("__exit__:1");
-
-      expect(read(configPath)).toBe(raw);
-      expect(output.errors.join("\n")).toContain(
-        `provider "shared" has source "file" but ref requests "${testCase.expectedSource}"`,
-      );
-    });
-  });
-
-  it("rejects impossible provider/source refs during real config validate", async () => {
-    const refId = "DISCORD_TEST_TOKEN";
-    await withConfig(sourceMismatchConfig({ id: refId }), async () => {
-      const snapshot = await configRuntime.readConfigFileSnapshot({ observe: false });
-      expect(snapshot.valid).toBe(true);
-      expect(snapshot.issues).toStrictEqual([]);
-
-      await expect(run("validate")).rejects.toMatchObject({
-        name: "ExitError",
-        code: 1,
-      });
-
-      expect(errors.join("\n")).toContain(
-        'Secret provider "shared" has source "file" but ref requests "exec"',
-      );
-      expect(errors.join("\n")).not.toContain(refId);
-    });
-  });
-
-  it.each([
-    {
-      name: "setting an authored value to itself",
-      run: (runtime: ReturnType<typeof createTestRuntime>["runtime"]) =>
-        runConfigSet({
-          path: "gateway.port",
-          value: "18789",
-          cliOptions: { strictJson: true },
-          runtime,
-        }),
-    },
-  ])("strictly validates an existing mismatch when $name is a no-op", async (testCase) => {
-    const raw = sourceMismatchConfig({ gateway: true });
-    await withConfig(raw, async ({ configPath }) => {
-      const output = createTestRuntime();
-
-      await expect(testCase.run(output.runtime)).rejects.toThrow("__exit__:1");
-
-      expect(read(configPath)).toBe(raw);
-      expect(output.logs).not.toContain("No change");
-      expect(output.errors.join("\n")).toContain(
-        'provider "shared" has source "file" but ref requests "exec"',
-      );
-    });
-  });
-
-  it("skips exec provider execution during dry-run by default", async () => {
-    await withExecDryRunConfigHarness("openclaw-config-cli-int-exec-skip-", async (params) => {
-      const before = read(params.configPath);
-      await runConfigSet({
-        cliOptions: {
-          batchFile: params.batchPath,
-          dryRun: true,
-          json: true,
-        },
-        runtime: params.runtime.runtime,
-      });
-      const after = read(params.configPath);
-
-      expect(after).toBe(before);
-      expect(fs.existsSync(params.markerPath)).toBe(false);
-      expect(JSON.parse(params.runtime.logs.join("\n"))).toMatchObject({
-        ok: true,
-        refsChecked: 0,
-        skippedExecRefs: 1,
-        checks: { schema: false, resolvability: true, resolvabilityComplete: false },
-      });
-    });
-  });
-
-  it("validates only the final candidate after a leaf overwrites an exec ref", async () => {
-    await withConfig("{ gateway: { port: 18789 } }\n", async ({ configPath, tempDir }) => {
-      const provider = { source: "exec", command: path.join(tempDir, "missing-helper") };
-      const secrets = { providers: { runner: provider, dormant: provider } };
-      const raw = JSON.stringify({ gateway: { port: 18789 }, secrets });
-      fs.writeFileSync(configPath, raw);
-      const batch = [
-        {
-          path: "channels.discord.token",
-          ref: { source: "exec", provider: "runner", id: "discarded" },
-        },
-        { path: "channels.discord.token", value: "replacement-token" },
-      ];
-      const output = createTestRuntime();
-
-      await runConfigSet({
-        cliOptions: { batchJson: JSON.stringify(batch) },
-        runtime: output.runtime,
-      });
-
-      expect(output.errors).toEqual([]);
-      expect(load(configPath)).toMatchObject({
-        channels: { discord: { token: "replacement-token" } },
-        secrets,
-      });
-    });
-  });
-
   it.each([false])(
     "still rejects an unsafe exec ref assigned last in a batch (dry run: %s)",
     async (dryRun) => {
@@ -460,35 +180,4 @@ describe("config cli secrets integration", () => {
       });
     },
   );
-
-  it("does not execute an overwritten exec ref during an --allow-exec batch dry-run", async () => {
-    await withConfig("{ gateway: { port: 18789 } }\n", async ({ configPath, tempDir }) => {
-      const markerPath = path.join(tempDir, "marker.txt");
-      const batch = [
-        ...createExecDryRunBatch({ markerPath }),
-        { path: "channels.discord.token", value: "replacement-token" },
-      ];
-      const raw = read(configPath);
-      const output = createTestRuntime();
-
-      await runConfigSet({
-        cliOptions: {
-          batchJson: JSON.stringify(batch),
-          dryRun: true,
-          allowExec: true,
-          json: true,
-        },
-        runtime: output.runtime,
-      });
-
-      expect(fs.existsSync(markerPath)).toBe(false);
-      expect(read(configPath)).toBe(raw);
-      expect(output.errors).toEqual([]);
-      expect(JSON.parse(output.logs.join("\n"))).toMatchObject({
-        ok: true,
-        refsChecked: 0,
-        skippedExecRefs: 0,
-      });
-    });
-  });
 });

@@ -4,10 +4,6 @@
 import type { PluginRegistrationContractParams } from "./plugin-registration-contract.js";
 
 export const pluginRegistrationContractCases = {
-  alibaba: {
-    pluginId: "alibaba",
-    videoGenerationProviderIds: ["alibaba"],
-  },
   anthropic: {
     pluginId: "anthropic",
     providerIds: ["anthropic"],
@@ -18,40 +14,13 @@ export const pluginRegistrationContractCases = {
     pluginId: "brave",
     webSearchProviderIds: ["brave"],
   },
-  byteplus: {
-    pluginId: "byteplus",
-    providerIds: ["byteplus", "byteplus-plan"],
-    videoGenerationProviderIds: ["byteplus"],
-  },
-  comfy: {
-    pluginId: "comfy",
-    providerIds: ["comfy"],
-    imageGenerationProviderIds: ["comfy"],
-    musicGenerationProviderIds: ["comfy"],
-    videoGenerationProviderIds: ["comfy"],
-  },
-  deepgram: {
-    pluginId: "deepgram",
-    mediaUnderstandingProviderIds: ["deepgram"],
-  },
   duckduckgo: {
     pluginId: "duckduckgo",
     webSearchProviderIds: ["duckduckgo"],
   },
-  elevenlabs: {
-    pluginId: "elevenlabs",
-    speechProviderIds: ["elevenlabs"],
-  },
   exa: {
     pluginId: "exa",
     webSearchProviderIds: ["exa"],
-  },
-  fal: {
-    pluginId: "fal",
-    providerIds: ["fal"],
-    imageGenerationProviderIds: ["fal"],
-    musicGenerationProviderIds: ["fal"],
-    videoGenerationProviderIds: ["fal"],
   },
   firecrawl: {
     pluginId: "firecrawl",
@@ -69,75 +38,6 @@ export const pluginRegistrationContractCases = {
     imageGenerationProviderIds: ["google"],
     videoGenerationProviderIds: ["google"],
   },
-  gradium: {
-    pluginId: "gradium",
-    speechProviderIds: ["gradium"],
-  },
-  groq: {
-    pluginId: "groq",
-    mediaUnderstandingProviderIds: ["groq"],
-  },
-  kie: {
-    pluginId: "kie",
-    videoGenerationProviderIds: ["kie"],
-  },
-  lmstudio: {
-    pluginId: "lmstudio",
-    providerIds: ["lmstudio"],
-  },
-  microsoft: {
-    pluginId: "microsoft",
-    speechProviderIds: ["microsoft", "edge"],
-  },
-  minimax: {
-    pluginId: "minimax",
-    providerIds: ["minimax", "minimax-portal"],
-    speechProviderIds: ["minimax"],
-    mediaUnderstandingProviderIds: ["minimax", "minimax-portal"],
-    imageGenerationProviderIds: ["minimax", "minimax-portal"],
-    musicGenerationProviderIds: ["minimax", "minimax-portal"],
-    videoGenerationProviderIds: ["minimax", "minimax-portal"],
-    webSearchProviderIds: ["minimax"],
-  },
-  mistral: {
-    pluginId: "mistral",
-    mediaUnderstandingProviderIds: ["mistral"],
-  },
-  moonshot: {
-    pluginId: "moonshot",
-    providerIds: ["moonshot"],
-    webSearchProviderIds: ["kimi"],
-    mediaUnderstandingProviderIds: ["moonshot"],
-    manifestAuthChoice: {
-      pluginId: "kimi",
-      choiceId: "kimi-code-api-key",
-      choiceLabel: "Kimi Code API key (subscription)",
-      groupId: "moonshot",
-      groupLabel: "Moonshot AI (Kimi)",
-      groupHint: "Kimi Code membership · https://www.kimi.com/membership/pricing",
-    },
-  },
-  novita: {
-    pluginId: "novita",
-    videoGenerationProviderIds: ["novita"],
-  },
-  nvidia: {
-    pluginId: "nvidia",
-    providerIds: ["nvidia"],
-    manifestAuthChoice: {
-      pluginId: "nvidia",
-      choiceId: "nvidia-api-key",
-      choiceLabel: "NVIDIA API key",
-      groupId: "nvidia",
-      groupLabel: "NVIDIA",
-      groupHint: "Direct API key",
-    },
-  },
-  ollama: {
-    pluginId: "ollama",
-    providerIds: ["ollama", "ollama-cloud"],
-    webSearchProviderIds: ["ollama"],
-  },
   openai: {
     pluginId: "openai",
     providerIds: ["openai"],
@@ -146,16 +46,6 @@ export const pluginRegistrationContractCases = {
     realtimeVoiceProviderIds: ["openai"],
     mediaUnderstandingProviderIds: ["openai"],
     imageGenerationProviderIds: ["openai"],
-  },
-  "opencode-go": {
-    pluginId: "opencode-go",
-    providerIds: ["opencode-go"],
-    mediaUnderstandingProviderIds: ["opencode-go"],
-  },
-  opencode: {
-    pluginId: "opencode",
-    providerIds: ["opencode"],
-    mediaUnderstandingProviderIds: ["opencode"],
   },
   openrouter: {
     pluginId: "openrouter",
@@ -173,72 +63,9 @@ export const pluginRegistrationContractCases = {
     pluginId: "perplexity",
     webSearchProviderIds: ["perplexity"],
   },
-  pixverse: {
-    pluginId: "pixverse",
-    videoGenerationProviderIds: ["pixverse"],
-  },
-  qwen: {
-    pluginId: "qwen",
-    providerIds: [
-      "qwen",
-      "qwencloud",
-      "modelstudio",
-      "dashscope",
-      "qwen-token-plan",
-      "bailian-token-plan",
-    ],
-    mediaUnderstandingProviderIds: ["qwen"],
-    videoGenerationProviderIds: ["qwen"],
-  },
-  runway: {
-    pluginId: "runway",
-    videoGenerationProviderIds: ["runway"],
-  },
-  senseaudio: {
-    pluginId: "senseaudio",
-    mediaUnderstandingProviderIds: ["senseaudio"],
-  },
   tavily: {
     pluginId: "tavily",
     webSearchProviderIds: ["tavily"],
     toolNames: ["tavily_search", "tavily_extract"],
-  },
-  together: {
-    pluginId: "together",
-    providerIds: ["together"],
-    videoGenerationProviderIds: ["together"],
-  },
-  "tts-local-cli": {
-    pluginId: "tts-local-cli",
-    speechProviderIds: ["tts-local-cli", "cli"],
-  },
-  vydra: {
-    pluginId: "vydra",
-    providerIds: ["vydra"],
-    speechProviderIds: ["vydra"],
-    imageGenerationProviderIds: ["vydra"],
-    videoGenerationProviderIds: ["vydra"],
-    manifestAuthChoice: {
-      pluginId: "vydra",
-      choiceId: "vydra-api-key",
-      choiceLabel: "Vydra API key",
-      groupId: "vydra",
-      groupLabel: "Vydra",
-      groupHint: "Image, video, and speech",
-    },
-  },
-  xai: {
-    pluginId: "xai",
-    providerIds: ["xai"],
-    webSearchProviderIds: ["grok"],
-    realtimeTranscriptionProviderIds: ["xai"],
-    mediaUnderstandingProviderIds: ["xai"],
-    videoGenerationProviderIds: ["xai"],
-    toolNames: ["code_execution", "x_search"],
-  },
-  zai: {
-    pluginId: "zai",
-    mediaUnderstandingProviderIds: ["zai"],
-    videoGenerationProviderIds: ["zai"],
   },
 } satisfies Record<string, PluginRegistrationContractParams>;

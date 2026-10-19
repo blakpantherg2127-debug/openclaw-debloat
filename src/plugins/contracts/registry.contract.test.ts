@@ -1,12 +1,11 @@
 // Registry contract tests cover plugin contract registry contents and lookup behavior.
 import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
 import { describe, expect, it } from "vitest";
-import { loadPluginManifestRegistryCore } from "../manifest-registry.js";
 import { resolveManifestContractPluginIds } from "../plugin-registry.js";
 import { BUNDLED_PLUGIN_CONTRACT_SNAPSHOTS } from "./inventory/bundled-capability-metadata.js";
 import { pluginRegistrationContractRegistry, providerContractLoadError } from "./registry.js";
 
-const ACTIVATION_SCOPED_WEB_SEARCH_PLUGIN_IDS = ["codex", "qa-lab"] as const;
+const ACTIVATION_SCOPED_WEB_SEARCH_PLUGIN_IDS = ["codex"] as const;
 const ACTIVATION_SCOPED_WEB_SEARCH_PLUGIN_ID_SET = new Set<string>(
   ACTIVATION_SCOPED_WEB_SEARCH_PLUGIN_IDS,
 );
@@ -77,89 +76,6 @@ describe("plugin contract registry", () => {
 
   it("does not duplicate bundled speech provider ids", () => {
     expectUniqueIds(pluginRegistrationContractRegistry.flatMap((entry) => entry.speechProviderIds));
-  });
-
-  it.each([
-    ["azure-speech", "speechProviderIds", ["azure-speech", "azure"]],
-    ["volcengine", "speechProviderIds", ["volcengine", "bytedance", "doubao"]],
-    ["xiaomi", "speechProviderIds", ["xiaomi", "mimo"]],
-    ["xai", "realtimeVoiceProviderIds", ["xai", "grok-voice", "xai-realtime-voice"]],
-  ] as const)("declares canonical-first %s %s aliases", (pluginId, contract, providerIds) => {
-    expect(
-      pluginRegistrationContractRegistry.find((entry) => entry.pluginId === pluginId)?.[contract],
-    ).toEqual(providerIds);
-  });
-
-  it("keeps video-only provider auth choices out of text onboarding", () => {
-    const registry = loadPluginManifestRegistryCore({});
-
-    for (const pluginId of ["alibaba", "runway"]) {
-      const plugin = registry.plugins.find(
-        (entry) => entry.origin === "bundled" && entry.id === pluginId,
-      );
-      expect(plugin?.providerAuthChoices).toEqual([
-        {
-          provider: pluginId,
-          method: "api-key",
-          choiceId: pluginId === "alibaba" ? "alibaba-model-studio-api-key" : "runway-api-key",
-          choiceLabel: pluginId === "alibaba" ? "Alibaba Model Studio API key" : "Runway API key",
-          groupId: pluginId,
-          groupLabel: pluginId === "alibaba" ? "Alibaba Model Studio" : "Runway",
-          groupHint: pluginId === "alibaba" ? "DashScope / Model Studio API key" : "API key",
-          onboardingScopes: ["image-generation"],
-          optionKey: pluginId === "alibaba" ? "alibabaModelStudioApiKey" : "runwayApiKey",
-          cliFlag: pluginId === "alibaba" ? "--alibaba-model-studio-api-key" : "--runway-api-key",
-          cliOption:
-            pluginId === "alibaba"
-              ? "--alibaba-model-studio-api-key <key>"
-              : "--runway-api-key <key>",
-          cliDescription:
-            pluginId === "alibaba" ? "Alibaba Model Studio API key" : "Runway API key",
-        },
-      ]);
-    }
-  });
-
-  it("exposes the GitHub Copilot non-interactive onboarding token flag from manifest metadata", () => {
-    const registry = loadPluginManifestRegistryCore({});
-    const plugin = registry.plugins.find(
-      (entry) => entry.origin === "bundled" && entry.id === "github-copilot",
-    );
-
-    expect(plugin?.providerAuthChoices).toEqual([
-      {
-        provider: "github-copilot",
-        method: "device",
-        appGuidedAuth: "device-code",
-        credentialOnly: true,
-        channelLogin: {},
-        appGuidedSecret: true,
-        choiceId: "github-copilot",
-        choiceLabel: "GitHub Copilot",
-        choiceHint: "Device login with your GitHub account",
-        assistantPriority: 1,
-        groupId: "copilot",
-        groupLabel: "Copilot",
-        groupHint: "GitHub, GitHub Enterprise + Local Proxy",
-        optionKey: "githubCopilotToken",
-        cliFlag: "--github-copilot-token",
-        cliOption: "--github-copilot-token <token>",
-        cliDescription: "GitHub Copilot OAuth token",
-      },
-      {
-        provider: "github-copilot",
-        method: "device-enterprise",
-        appGuidedAuth: "device-code",
-        credentialOnly: true,
-        choiceId: "github-copilot-enterprise",
-        choiceLabel: "GitHub Copilot (Enterprise / data residency)",
-        choiceHint: "Device login against your GitHub Enterprise (*.ghe.com) tenant",
-        assistantPriority: 2,
-        groupId: "copilot",
-        groupLabel: "Copilot",
-        groupHint: "GitHub, GitHub Enterprise + Local Proxy",
-      },
-    ]);
   });
 
   it("covers every bundled web fetch plugin from the shared resolver", () => {

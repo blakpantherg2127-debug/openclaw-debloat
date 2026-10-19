@@ -120,20 +120,6 @@ describe("legacy channel pairing state migration", () => {
     expect(resolveAccounts).not.toHaveBeenCalled();
   });
 
-  it("does not defer pairing requests or built-in explicit default accounts", async () => {
-    const { detected } = await fixture(
-      {
-        "telegram-pairing.json": { version: 1, requests: [] },
-        "whatsapp-default-allowFrom.json": ["legacy-user"],
-      },
-      {
-        configuredChannelIds: ["custom-channel", "whatsapp"],
-        deferConfiguredAccountDiscovery: true,
-      },
-    );
-    expect(detected.accountDiscoveryDeferred).toBe(false);
-  });
-
   it("imports requests and exact scoped accounts while ignoring invalid candidates", async () => {
     const state = await fixture(
       {
@@ -161,19 +147,6 @@ describe("legacy channel pairing state migration", () => {
     expect(
       fs.existsSync(path.join(path.dirname(state.sourceDir), "state", "openclaw.sqlite")),
     ).toBe(true);
-  });
-
-  it("imports a built-in explicit default account without channel config", async () => {
-    const allowFrom = ["+12025550101", "+12025550102", "+12025550103"];
-    const state = await fixture({ "whatsapp-default-allowFrom.json": { version: 1, allowFrom } });
-    expect(state.migrate()).toEqual({
-      warnings: [],
-      changes: ["Migrated 3 whatsapp/default allowFrom entries → shared SQLite state"],
-    });
-    expect(fs.readdirSync(state.sourceDir)).toEqual([]);
-    expect(readChannelPairingStateSnapshot("whatsapp", state.env).allowFrom).toEqual({
-      default: allowFrom,
-    });
   });
 
   it("merges authoritative SQLite rows and keeps unreadable sources", async () => {

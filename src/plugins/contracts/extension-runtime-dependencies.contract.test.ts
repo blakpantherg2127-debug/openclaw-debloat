@@ -4,7 +4,6 @@ import { builtinModules, createRequire } from "node:module";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { resolvePluginNpmRuntimeBuildPlan } from "../../../scripts/lib/plugin-npm-runtime-build.mts";
-import { expectNoReaddirSyncDuring } from "../../test-utils/fs-scan-assertions.js";
 import {
   listGitTrackedFiles,
   toRepoPath,
@@ -20,11 +19,6 @@ const OPTIONAL_UNDECLARED_RUNTIME_IMPORTS = new Map<string, Set<string>>([
     "extensions/canvas",
     // The A2UI bundle probes this optional markdown renderer and falls back when absent.
     new Set(["@a2ui/markdown-it"]),
-  ],
-  [
-    "extensions/discord",
-    // @discordjs/voice still probes the native addon in its dependency report path.
-    new Set(["@discordjs/opus"]),
   ],
   ["extensions/qa-lab", new Set(["crabline"])],
 ]);
@@ -61,12 +55,6 @@ const INDIRECT_RUNTIME_DEPENDENCIES = new Map<string, Set<string>>([
   ],
 ]);
 const COMPUTED_RUNTIME_DEPENDENCIES = new Map<string, Set<string>>([
-  [
-    "extensions/discord",
-    // Bundled at build time into the served Discord Activity shell asset rather than
-    // imported by plugin runtime code; see scripts/build-discord-activity-sdk.mts.
-    new Set(["@discord/embedded-app-sdk"]),
-  ],
   [
     "extensions/lobster",
     // Keep Lobster external to the plugin bundle; its computed core import is resolved at runtime.
@@ -356,16 +344,6 @@ describe("Discord dependency ownership", () => {
 });
 
 describe("extension runtime dependency manifests", () => {
-  it("lists extension dependency inputs from git without walking extension dirs", () => {
-    expectNoReaddirSyncDuring(() => {
-      const manifests = listPackageManifests(EXTENSION_ROOT);
-      const runtimeFiles = listRuntimeFiles("extensions/discord");
-
-      expect(manifests.length).toBeGreaterThan(0);
-      expect(runtimeFiles.length).toBeGreaterThan(0);
-    });
-  });
-
   it("keeps json5 in memory-core for packaged runtime config parsing", () => {
     const manifest = readPackageManifest("extensions/memory-core/package.json");
 

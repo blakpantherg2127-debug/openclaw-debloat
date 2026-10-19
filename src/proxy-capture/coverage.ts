@@ -25,23 +25,6 @@ const DEBUG_PROXY_COVERAGE_ENTRIES: readonly DebugProxyCoverageEntry[] = [
       "Central provider request path routes through explicit proxy overrides and records request/response payloads.",
   },
   {
-    id: "discord-rest",
-    label: "Discord REST monitor fetch",
-    modulePath: "extensions/discord/src/monitor/rest-fetch.ts",
-    protocols: ["http", "https"],
-    status: "captured",
-    notes: "Discord monitor REST calls inherit the debug proxy and record HTTP exchanges.",
-  },
-  {
-    id: "discord-gateway",
-    label: "Discord gateway monitor",
-    modulePath: "extensions/discord/src/monitor/gateway-plugin.ts",
-    protocols: ["https", "wss"],
-    status: "captured",
-    notes:
-      "Gateway metadata fetches and websocket lifecycle events are captured for monitor traffic.",
-  },
-  {
     id: "telegram-fetch",
     label: "Telegram fetch resolver",
     modulePath: "extensions/telegram/src/fetch.ts",
@@ -49,14 +32,6 @@ const DEBUG_PROXY_COVERAGE_ENTRIES: readonly DebugProxyCoverageEntry[] = [
     status: "captured",
     notes:
       "Telegram API fetch fallback picks up debug proxy env and records outbound/inbound exchanges.",
-  },
-  {
-    id: "mattermost-ws",
-    label: "Mattermost monitor websocket",
-    modulePath: "extensions/mattermost/src/mattermost/monitor-websocket.ts",
-    protocols: ["ws", "wss"],
-    status: "captured",
-    notes: "Mattermost websocket monitor uses the debug proxy agent and records frame activity.",
   },
   {
     id: "openai-realtime-voice",
@@ -84,33 +59,6 @@ const DEBUG_PROXY_COVERAGE_ENTRIES: readonly DebugProxyCoverageEntry[] = [
     status: "captured",
     notes:
       "Direct OpenAI TTS fetches record request/response payloads while inheriting proxy env routing.",
-  },
-  {
-    id: "microsoft-voices",
-    label: "Microsoft voice discovery",
-    modulePath: "extensions/microsoft/speech-provider.ts",
-    protocols: ["https"],
-    status: "captured",
-    notes:
-      "Microsoft voice listing fetches record HTTP exchanges and follow process-wide proxy routing.",
-  },
-  {
-    id: "feishu-client-http",
-    label: "Feishu SDK HTTP client",
-    modulePath: "extensions/feishu/src/client.ts",
-    protocols: ["https"],
-    status: "proxy-only",
-    notes:
-      "Feishu SDK traffic can inherit ambient proxying, but decrypted request/response capture is not yet wired at the SDK integration.",
-  },
-  {
-    id: "feishu-client-ws",
-    label: "Feishu SDK websocket client",
-    modulePath: "extensions/feishu/src/client.ts",
-    protocols: ["wss"],
-    status: "proxy-only",
-    notes:
-      "Feishu websocket creation can inherit ambient proxying, but websocket frame capture is not yet wired.",
   },
 ];
 

@@ -136,26 +136,6 @@ describe("getSlashCommands", () => {
     ]);
   });
 
-  it("falls back to provider-resolved levels when thinkingLevels is empty (#76482)", () => {
-    const commands = getSlashCommands({
-      provider: "minimax",
-      model: "MiniMax-M3",
-      thinkingLevels: [], // empty from lightweight session row
-    });
-    const think = commands.find((command) => command.name === "think");
-    // Should fall back to listThinkingLevelLabels, not return empty completions
-    const completions = think?.getArgumentCompletions?.("");
-    expect(Array.isArray(completions)).toBe(true);
-    if (!Array.isArray(completions)) {
-      throw new Error("expected synchronous thinking-level completions");
-    }
-    expect(completions).toEqual([
-      { value: "off", label: "off" },
-      { value: "adaptive", label: "adaptive" },
-      { value: "default", label: "default" },
-    ]);
-  });
-
   it.each([
     { model: "gpt-5.6-sol", agentRuntime: "codex", supportsUltra: true },
     { model: "gpt-5.6-terra", agentRuntime: "codex", supportsUltra: true },
@@ -215,21 +195,6 @@ describe("getSlashCommands", () => {
 });
 
 describe("helpText", () => {
-  it("uses session-supported thinking levels in help before the provider fallback", () => {
-    const model = { provider: "minimax", model: "MiniMax-M3" };
-
-    expect(
-      helpText({
-        ...model,
-        thinkingLevels: [
-          { id: "off", label: "off" },
-          { id: "max", label: "max" },
-        ],
-      }),
-    ).toContain("/think <off|max|default>");
-    expect(helpText({ ...model, thinkingLevels: [] })).toContain("/think <off|adaptive|default>");
-  });
-
   it("documents default reset values for model, thinking, and fast mode", () => {
     const output = helpText();
 

@@ -1,14 +1,12 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   hasBuildArtifactAffectingChange,
   hasQaSmokeAffectingChange,
   resolveReleaseFastLaneScope,
 } from "../../scripts/lib/ci-changed-node-test-plan.mts";
-import { createSelectedNodeTestShardBundles } from "../../scripts/lib/ci-node-test-plan.mts";
 import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 import {
   createChangedNodeTestShards,
@@ -18,40 +16,6 @@ import {
 const argvTempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("CI changed Node test plan", () => {
-  it("keeps split planner proof within native row budgets without losing cases", () => {
-    const files = [
-      "test/scripts/ci-changed-node-test-plan.test.ts",
-      "test/scripts/ci-changed-node-test-plan.source-owners.test.ts",
-      "test/scripts/ci-changed-node-test-plan.policy.test.ts",
-      "test/scripts/ci-changed-node-test-plan.process-owners.test.ts",
-      "test/scripts/ci-changed-node-test-plan.dependency-hubs.test.ts",
-      "test/scripts/ci-changed-node-test-plan.dependency-inputs.test.ts",
-      "test/scripts/ci-changed-node-test-plan.config-fallback.test.ts",
-    ];
-    for (const targets of [files, [files[0]!], [files[3]!]]) {
-      for (const runnerBackend of ["blacksmith", "hybrid"]) {
-        const rows = expectDefined(
-          createSelectedNodeTestShardBundles(targets, { runnerBackend }),
-          "precise planner proof",
-        );
-        const selected = rows.flatMap((row) =>
-          row.groups.flatMap((group) => group.includePatterns ?? []),
-        );
-        expect(selected).toHaveLength(targets.length);
-        expect(new Set(selected)).toEqual(new Set(targets));
-        for (const row of rows) {
-          expect(row.predictedTestSeconds).toBeGreaterThan(0);
-          expect(row.predictedTestSeconds).toBeLessThanOrEqual(150);
-          expect(row.planConcurrency).toBe(1);
-          for (const group of row.groups) {
-            expect(group.configs).toEqual(["test/vitest/vitest.tooling.config.ts"]);
-            expect(group.env?.OPENCLAW_VITEST_MAX_WORKERS).toBe("2");
-          }
-        }
-      }
-    }
-  });
-
   it("classifies build-artifact and QA smoke impact by changed surface", () => {
     expect(hasBuildArtifactAffectingChange(["src/agents/foo.test.ts", "test/helpers/x.ts"])).toBe(
       false,

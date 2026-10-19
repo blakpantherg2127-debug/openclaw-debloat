@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { resolveApiKeyForProviderCore } from "../agents/model-auth-provider.js";
 import type { OpenClawConfig } from "../config/config.js";
-import { createPluginManifestRecordFixture } from "../plugins/plugin-metadata.test-support.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import {
@@ -505,50 +504,6 @@ describe("secrets runtime provider and media surfaces", () => {
     expect(snapshot.warnings.map((warning) => warning.path)).toContain(
       "memory.search.remote.apiKey",
     );
-  });
-
-  it("does not let a managed local embedding service depend on a remote api key ref", async () => {
-    const missingRef = envTokenRef("MISSING_LLAMA_CPP_API_KEY");
-    const snapshot = await prepareSecretsRuntimeSnapshot({
-      config: asConfig({
-        memory: { search: { provider: "local" } },
-        models: {
-          providers: {
-            "llama-cpp": {
-              baseUrl: "http://127.0.0.1:35063/v1",
-              apiKey: missingRef,
-              localService: { command: "/fixture/llama-server" },
-              models: [],
-            },
-          },
-        },
-      }),
-      env: {},
-      agentDirs: ["/tmp/openclaw-agent-main"],
-      loadAuthStore: () => ({ version: 1, profiles: {} }),
-      manifestRegistry: {
-        plugins: [
-          createPluginManifestRecordFixture({
-            id: "llama-cpp",
-            providers: ["llama-cpp"],
-            contracts: { embeddingProviders: ["local"] },
-          }),
-        ],
-      },
-    });
-
-    expect(snapshot.config.models?.providers?.["llama-cpp"]?.apiKey).toEqual(missingRef);
-    expect(snapshot.degradedOwners).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ ownerId: "memory-provider:main" })]),
-    );
-    activateSecretsRuntimeSnapshot(snapshot);
-    await expect(
-      resolveApiKeyForProviderCore({
-        provider: "llama-cpp",
-        cfg: snapshot.config,
-        store: { version: 1, profiles: {} },
-      }),
-    ).resolves.toMatchObject({ apiKey: "llama-cpp-local", mode: "api-key" });
   });
 
   it.each(["llmman", "lmstudio"])(

@@ -17,7 +17,7 @@ afterEach(async () => {
 });
 
 const emptyRegistry = createTestRegistry([]);
-type SlackAdapterPlugin = Pick<ChannelPlugin, "id" | "meta" | "capabilities" | "config"> &
+type TelegramAdapterPlugin = Pick<ChannelPlugin, "id" | "meta" | "capabilities" | "config"> &
   Partial<Pick<ChannelPlugin, "approvalCapability" | "outbound">>;
 
 const PLUGIN_TARGETS_CFG = {
@@ -25,7 +25,7 @@ const PLUGIN_TARGETS_CFG = {
     plugin: {
       enabled: true,
       mode: "targets",
-      targets: [{ channel: "slack", to: "U123" }],
+      targets: [{ channel: "telegram", to: "U123" }],
     },
   },
 } as OpenClawConfig;
@@ -93,14 +93,16 @@ function firstDeliveredPayload(deliver: ReturnType<typeof vi.fn>) {
   return deliveryArgs(deliver)?.payloads?.at(0);
 }
 
-function registerSlackAdapterPlugin(plugin: SlackAdapterPlugin): void {
-  const registry = createTestRegistry([{ pluginId: "slack", plugin, source: "test" }]);
+function registerTelegramAdapterPlugin(plugin: TelegramAdapterPlugin): void {
+  const registry = createTestRegistry([{ pluginId: "telegram", plugin, source: "test" }]);
   setActivePluginRegistry(registry);
 }
 
-function createSlackAdapterPlugin(overrides: Partial<SlackAdapterPlugin>): SlackAdapterPlugin {
+function createTelegramAdapterPlugin(
+  overrides: Partial<TelegramAdapterPlugin>,
+): TelegramAdapterPlugin {
   return {
-    ...createChannelTestPluginBase({ id: "slack" as ChannelPlugin["id"] }),
+    ...createChannelTestPluginBase({ id: "telegram" as ChannelPlugin["id"] }),
     ...overrides,
   };
 }
@@ -257,8 +259,8 @@ describe("plugin approval forwarding", () => {
     });
 
     it("does not forward reviewer cards through an older channel capability", async () => {
-      registerSlackAdapterPlugin(
-        createSlackAdapterPlugin({
+      registerTelegramAdapterPlugin(
+        createTelegramAdapterPlugin({
           approvalCapability: { authorizeActorAction: () => ({ authorized: true }) },
         }),
       );
@@ -267,8 +269,8 @@ describe("plugin approval forwarding", () => {
           plugin: {
             enabled: true,
             mode: "targets",
-            targets: [{ channel: "slack", to: "U123" }],
-            slack: { approvers: ["team:T11111111:user:U11111111"] },
+            targets: [{ channel: "telegram", to: "U123" }],
+            telegram: { approvers: ["team:T11111111:user:U11111111"] },
           },
         },
       } as OpenClawConfig;
@@ -341,7 +343,7 @@ describe("plugin approval forwarding", () => {
     it("returns false when exec enabled but plugin disabled", async () => {
       const cfg = {
         approvals: {
-          exec: { enabled: true, mode: "targets", targets: [{ channel: "slack", to: "U123" }] },
+          exec: { enabled: true, mode: "targets", targets: [{ channel: "telegram", to: "U123" }] },
           plugin: { enabled: false },
         },
       } as OpenClawConfig;
@@ -357,7 +359,7 @@ describe("plugin approval forwarding", () => {
           plugin: {
             enabled: true,
             mode: "targets",
-            targets: [{ channel: "slack", to: "U123" }],
+            targets: [{ channel: "telegram", to: "U123" }],
           },
         },
       } as OpenClawConfig;
@@ -380,8 +382,8 @@ describe("plugin approval forwarding", () => {
   describe("channel adapter hooks", () => {
     it("uses buildPluginPendingPayload from channel adapter when available", async () => {
       const mockPayload = { text: "custom adapter payload" };
-      registerSlackAdapterPlugin(
-        createSlackAdapterPlugin({
+      registerTelegramAdapterPlugin(
+        createTelegramAdapterPlugin({
           approvalCapability: {
             render: {
               plugin: {
@@ -401,8 +403,8 @@ describe("plugin approval forwarding", () => {
 
     it("calls outbound beforeDeliverPayload before plugin approval delivery", async () => {
       const beforeDeliverPayload = vi.fn();
-      registerSlackAdapterPlugin(
-        createSlackAdapterPlugin({
+      registerTelegramAdapterPlugin(
+        createTelegramAdapterPlugin({
           outbound: {
             deliveryMode: "direct",
             beforeDeliverPayload,
@@ -419,8 +421,8 @@ describe("plugin approval forwarding", () => {
 
     it("uses buildPluginResolvedPayload from channel adapter for resolved messages", async () => {
       const mockPayload = { text: "custom resolved payload" };
-      registerSlackAdapterPlugin(
-        createSlackAdapterPlugin({
+      registerTelegramAdapterPlugin(
+        createTelegramAdapterPlugin({
           approvalCapability: {
             render: {
               plugin: {

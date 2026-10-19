@@ -64,7 +64,7 @@ async function stageDockerManifestCopies(params: { body: string; fixture: string
 }
 
 describe("Dockerfile", () => {
-  it.runIf(process.platform !== "win32").each(["", "matrix"])(
+  it.runIf(process.platform !== "win32").each([""])(
     "stages every locked workspace manifest while retaining optional plugin selection: %j",
     async (selection) => {
       const dockerfile = collapseDockerContinuations(await readFile(dockerfilePath, "utf8"));

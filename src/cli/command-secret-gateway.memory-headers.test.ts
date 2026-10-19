@@ -86,7 +86,7 @@ describe.each([
   });
 });
 
-it.each(["llama-cpp", "llmman"])(
+it.each(["llmman"])(
   "preserves the %s provider's auth contract in command-local memory preparation",
   async (provider) => {
     callGateway.mockRejectedValue(new Error("Gateway unavailable"));

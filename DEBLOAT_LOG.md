@@ -288,3 +288,96 @@ of core files with no test proof possible here in reasonable time.
   helper and import. One pruned case ("Doctor-projected database targets are incompatible")
   tests kept update admission but uses a Discord legacy config as its trigger; coverage lost.
 - Gates: `pnpm tsgo:all` pass, oxfmt clean, the six related test files pass. Commit `2a1eef9a`.
+
+### 3.2 Full test suite on the final branch, Crabbox restored (local Docker run)
+
+- Environment: Windows host, Docker Desktop on WSL2 (26 GB, 16 CPUs), `node:24-trixie` container
+  running as root (Node 24.22.0, pnpm 12.9.0, Git 2.47.3, Python 3.13). The repo lives in a named
+  Docker volume: a partial clone (`--filter=blob:none`) of `debloat/wip` plus an untouched
+  baseline worktree at `a959e70b`, both installed and built. `jq` was installed in the container
+  for the shell-tooling tests. Playwright's Chromium is not installed, so `ui-browser` fails on
+  both trees.
+- Crabbox restored with `scripts/debloat/tools/restore-crabbox.sh`. It crashed first because the
+  harnesses group no longer lists `paths`; `apply.mjs` now reads `group.paths ?? []`. The diff is
+  Crabbox-only: `extensions/crabbox`, `scripts/crabbox-*`, `.crabbox.yaml`, 14 test files, the
+  `crabbox:*` package scripts and the `dist/crabbox-wrapper.js` publish entry, the tsdown entry,
+  test-path registries and one lockfile importer. `pnpm install --frozen-lockfile` is up to date.
+  Gates before the suite: `pnpm tsgo:all` pass, `pnpm build` pass.
+- Full suite: `shard-run.py --lanes 4 --workers 3`, 712 shards in 7.3 h. Ten shards did not
+  finish under that load: worker compilation stalled past the 120 s no-output watchdog, two lanes
+  raced on a `dist-runtime` rebuild, and `gateway-database-workers` hit the 2 h shard cap. Re-run
+  with `--lanes 2` they completed (1.5 h). Final: 488 shards pass, 221 have failing tests, 3 ended
+  with suite errors after running their tests.
+- `fail-sheet.py` found nothing at first: Vitest colors its output here, and colored lines label
+  the project without `|...|`, sometimes with a pool suffix such as
+  `gateway-server (gateway-server-parallel)`. It now strips ANSI codes and accepts both shapes.
+  Result: 3,088 failing tests in 583 files, counting every file of a shard that died before
+  reporting.
+- Classification: each of the 583 files was run alone on both trees with `run-files.sh` (three
+  runners per tree, both trees at once so they share the same load):
+  - 263 fail only on the branch: caused by the debloat, fixed below.
+  - 112 fail on both trees: pre-existing in this environment, not fixed. Recognizable causes:
+    gateway lifecycle tests timing out, running as root (`io.eacces` and similar), missing
+    Android/iOS/macOS toolchains, no Chromium; the rest are environment-specific assertions,
+    including the Codex app-server races the cloud run saw.
+  - 208 pass when re-run alone: failures from load during the full run.
+  - Per-file results: `debloat/results/classification.jsonl` (replaces the cloud run's partial
+    `results.tsv` and `fail-sheet.jsonl`, which are now the full-run versions).
+- Fixes, all in `apply.mjs`: 461 new entries (88 test files, 266 test cases, 86 table rows, 21
+  edits). By kind:
+  - Tests that exist for a removed plugin, or that load one at import time, are deleted.
+  - Cases and table rows that use a removed plugin as a fixture are pruned, including registry
+    rows: plugin registration cases, package-manifest contracts, config-API guardrails, CI and
+    release planner fixtures, and native-app tooling tests that read `apps/*`.
+  - Kept behavior whose synthetic channel plugin only borrowed a removed channel's id is switched
+    to the Telegram id instead: the gateway send suites (78 of 83 cases kept) and the plugin
+    approval forwarder (all 17 kept). The same swap did not work for config-schema fixtures
+    (Telegram has a real schema), so those cases are pruned.
+- Production fixes the suite found:
+  - `Dockerfile` and `scripts/docker/cleanup-smoke/Dockerfile` still copied `examples/`, which
+    disappeared with `examples/ai-chat`; the image build would fail. Examples group edits.
+  - Six `package.json` scripts (`qa:e2e`, `qa:lab:up`, `qa:lab:up:fast`, `maturity:check`,
+    `maturity:render`, `qa:code-mode-models`) pointed at QA Lab scripts the channels group pruned.
+  - `src/proxy-capture/coverage.ts` listed capture seams inside removed plugins (Discord,
+    Feishu, Mattermost, Microsoft).
+  - `docs/reference/secretref-user-supplied-credentials-matrix.json` listed 76 credential paths
+    of removed plugins. `apply.mjs` now regenerates it from the secret target registry after the
+    other generators.
+- Script fixes and additions in `apply.mjs`:
+  - Test-case matching accepts `it.skipIf(...)(`, `it.runIf(...)(`, local aliases (`itUnix`,
+    `posixIt.for`) and a bare `)(` after computed tables.
+  - Block ends skip lines inside multi-line template literals (inline scripts in tests).
+  - Row removal handles keyed registry entries (`alibaba: { ... }`) and call-style list entries.
+  - The test-path registry pass (`scripts/lib`, `test/vitest`) treats every group's `testFiles`
+    as removed and drops the whole registry row that names one (`{ testFile: ... }`,
+    `[name, path]` tuples). Dropping only the path line had left typed tuples such as
+    `["channel-config"]` in the CI cache-warm plan, which failed `tsgo:scripts`.
+  - Edits that narrow an `as const` table keep its union type, so later comparisons against the
+    pruned value still typecheck.
+  - New step 4b for every file a run changes: drop `describe` blocks left without tests, drop
+    imports, declarations and destructured bindings that oxlint reports unused, then run oxfmt.
+  - Two helpers that were already unused (`rel`, `lineStarts`) are gone.
+  - `apply.sh` re-run on the result changes nothing; lint and format are clean on every touched
+    file.
+- Coverage removed for kept behavior, beyond plugin-specific tests:
+  - Whole files: command owner authority for `/config`, `/mcp` and `/allowlist`
+    (`commands-config.owner`), the registry-backed session-binding contract (its one kept entry
+    was Telegram), secrets runtime representative target coverage (`runtime.coverage`),
+    unsupported-surface policy, plugin-SDK runtime-API guardrails and prompt snapshots.
+  - Cases: 8 exec-approval forwarder cases, 7 config-CLI SecretRef cases, 4 managed-handoff
+    requester cases (Telegram's owner rules reject the swapped fixture), and CI/release planner
+    cases whose fixtures name deleted files. The full list is in the script, grouped by plugin.
+- Left as is: a few maintainer scripts outside `scripts/lib` still name deleted test files
+  (`scripts/check-changed.mts` runs `test/scripts/prompt-snapshots.test.ts` when prompt files
+  change; routing fixtures in `scripts/test-projects.test-support.mts`). Removing those entries
+  automatically broke call shapes, so they stay; they only matter when those exact paths change.
+- Verification after the fixes: all 263 debloat-caused files are resolved (87 deleted, 176 pass
+  alone), and all 179 modified or previously failing test files pass when run alone. After the
+  registry fix, the 49 tooling tests that read the pruned registries and the 17 test files that
+  still name a deleted test path pass as well.
+- Gates after the fixes: `pnpm tsgo:all` pass, `pnpm build` pass, oxlint and oxfmt clean on every
+  touched file. Isolated Gateway with the lean profile (`gw-probe.sh lean`): ready in 4 s, the six
+  allowed plugins load (anthropic, telegram, browser, duckduckgo, web-readability, memory-core),
+  67 tools with none of the required ones missing, idle RSS 1,662 MB, doctor complete. Its only
+  channel warning is Telegram rejecting the placeholder bot token (401), as expected.
+- Next: push for review (no push from the container; it has no GitHub login).

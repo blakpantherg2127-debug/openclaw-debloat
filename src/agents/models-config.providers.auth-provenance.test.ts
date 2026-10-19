@@ -756,7 +756,6 @@ describe("models-config provider auth provenance", () => {
   it.each([
     ["${MY_VLLM_KEY}", { MY_VLLM_KEY: "resolved-key" }, "MY_VLLM_KEY", "resolved-key"],
     ["${MY_VLLM_KEY}", {}, undefined, undefined],
-    ["VLLM_API_KEY", {}, undefined, undefined],
     ["ALLCAPS_SAMPLE", {}, "ALLCAPS_SAMPLE", "ALLCAPS_SAMPLE"],
   ] as const)("resolves configured credential %s with %j", (key, env, apiKey, discoveryApiKey) => {
     const auth = createProviderApiKeyResolver(

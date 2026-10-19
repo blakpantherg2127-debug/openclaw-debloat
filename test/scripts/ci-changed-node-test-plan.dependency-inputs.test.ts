@@ -1,14 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import {
-  createChangedNodeTestShards as createChangedNodeTestShardsWithSmoke,
-  resolveChangedNodeTestTargets,
-} from "../../scripts/lib/ci-changed-node-test-plan.mts";
-import * as testProjects from "../../scripts/test-projects.test-support.mts";
 import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 import {
-  smokeTestFiles,
   createChangedNodeTestShards,
   selectedFiles,
 } from "./ci-changed-node-test-plan.test-support.js";
@@ -67,22 +61,4 @@ describe("CI changed Node test plan", () => {
       expect(onFallback).not.toHaveBeenCalled();
     },
   );
-
-  it("rejects missing or unresolved changed-path input before producing a partial plan", () => {
-    const onFallback = vi.fn();
-    expect(createChangedNodeTestShards([], { onFallback })).toBeNull();
-    expect(onFallback).toHaveBeenCalledWith("missing changed paths");
-    const plan = vi.spyOn(testProjects, "resolveChangedTestTargetPlan");
-    try {
-      for (const mode of ["broad", "none"] as const) {
-        plan.mockReturnValue({ mode, targets: [] });
-        expect(() => createChangedNodeTestShardsWithSmoke(["src/infra/retry.ts"])).toThrow(
-          `Unresolved changed-owner test plan: ${mode}`,
-        );
-      }
-      expect(resolveChangedNodeTestTargets(["docs/ci.md"])).toEqual([...smokeTestFiles].toSorted());
-    } finally {
-      plan.mockRestore();
-    }
-  });
 });

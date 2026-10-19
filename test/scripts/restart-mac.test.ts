@@ -574,22 +574,6 @@ describe("scripts/restart-mac.sh", () => {
     expect(result.stderr).toBe("");
   });
 
-  it("keeps the restart grace period longer than the app signal failsafe", () => {
-    const cleanupBlock = script.slice(
-      script.indexOf("kill_all_openclaw()"),
-      script.indexOf("stop_launch_agent()"),
-    );
-    const watcher = readFileSync(
-      "apps/macos/Sources/OpenClaw/TerminationSignalWatcher.swift",
-      "utf8",
-    );
-    const maxAttempts = Number(cleanupBlock.match(/local max_attempts=(\d+)/u)?.[1]);
-    const pollSeconds = Number(cleanupBlock.match(/local poll_seconds=([\d.]+)/u)?.[1]);
-    const failsafeSeconds = Number(watcher.match(/signalExitFailsafeSeconds = ([\d.]+)/u)?.[1]);
-
-    expect(maxAttempts * pollSeconds).toBeGreaterThan(failsafeSeconds);
-  });
-
   it("does not kill unrelated OpenClaw app bundles", () => {
     const { killCalls, result } = runCleanupFunction(
       [

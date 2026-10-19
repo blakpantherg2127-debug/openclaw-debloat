@@ -7,10 +7,6 @@ import { listGitTrackedFiles } from "../../test-utils/repo-files.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
 const MANIFEST_BASENAME = "openclaw.plugin.json";
-const CODE_MODE_TIER_LITERAL = /codeMode:\s*"(?:preferred|capable)"/;
-// Minimax resolves cost per provider surface, so its rows cannot live in one
-// manifest catalog and remain invisible to the manifest scan below.
-const UNCONVERTED_SOURCE_CATALOG_PLUGINS = ["minimax"];
 
 type CatalogEntry = {
   /** `provider/model` ref used in failure output. */
@@ -145,16 +141,5 @@ describe("bundled shared upstream model catalogs", () => {
     }
 
     expect(silent.toSorted()).toEqual([]);
-  });
-
-  it("keeps code-mode tiers out of plugin source so shared-model checks can see them", () => {
-    const plugins = listBundledPluginFiles()
-      .filter((file) => file.endsWith(".ts") && !file.includes(".test."))
-      .filter((file) =>
-        CODE_MODE_TIER_LITERAL.test(fs.readFileSync(path.join(repoRoot, file), "utf8")),
-      )
-      .map((file) => file.split("/")[1] as string);
-
-    expect([...new Set(plugins)].toSorted()).toEqual(UNCONVERTED_SOURCE_CATALOG_PLUGINS);
   });
 });

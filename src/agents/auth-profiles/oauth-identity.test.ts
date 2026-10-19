@@ -32,19 +32,6 @@ describe("isSafeToCopyOAuthIdentity (unified copy gate, used for mirror and adop
     }
   });
 
-  it.each([
-    ["same enterprise host", "HTTPS://ACME.GHE.COM/", "acme.ghe.com", true],
-    ["public and enterprise", undefined, "acme.ghe.com", false],
-    ["unsupported host", "attacker.example", "attacker.example", false],
-  ])("keeps GitHub Copilot routing scope isolated: %s", (_name, existing, incoming, expected) => {
-    expect(
-      isSafeToCopyOAuthRoutingScope(
-        { provider: "github-copilot", enterpriseUrl: existing },
-        { provider: "github-copilot", enterpriseUrl: incoming },
-      ),
-    ).toBe(expected);
-  });
-
   it("rejects identity-less cross-tenant credentials even when identity adoption is otherwise allowed", () => {
     expect(
       isSafeToCopyOAuthIdentity(

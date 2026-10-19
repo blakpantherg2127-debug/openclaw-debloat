@@ -68,29 +68,6 @@ describe("decision model reload planning", () => {
   });
 });
 
-it("restarts Slack when plugin approvers are edited", async () => {
-  const { slackSetupPlugin } = await loadBundledPluginFacade<{
-    slackSetupPlugin: ChannelPlugin;
-  }>({ pluginId: "slack", artifactBasename: "setup-plugin-api.ts" });
-  setActivePluginRegistry(
-    createTestRegistry([{ pluginId: "slack", plugin: slackSetupPlugin, source: "test" }]),
-  );
-  const configWithApprover = (approver: string): OpenClawConfig => ({
-    approvals: { plugin: { slack: { approvers: [approver] } } },
-  });
-  const plan = buildGatewayReloadPlan(
-    diffGatewayReloadPaths(
-      configWithApprover("team:T123:user:U111"),
-      configWithApprover("team:T123:user:U222"),
-      listConfigReloadRefinementPrefixes(),
-    ),
-  );
-  expect(plan.restartGateway).toBe(false);
-  expect(plan.restartChannels).toEqual(new Set(["slack"]));
-  expect(plan.restartChannelAccounts).toEqual(new Map());
-  expect(plan.reloadPlugins).toBe(false);
-});
-
 const { telegramSetupPlugin } = await loadBundledPluginFacade<{
   telegramSetupPlugin: ChannelPlugin;
 }>({ artifactBasename: "setup-plugin-api", pluginId: "telegram" });

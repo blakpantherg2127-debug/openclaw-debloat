@@ -55,49 +55,6 @@ describe("resolved model Tool Search policy", () => {
     vi.unstubAllEnvs();
   });
 
-  it.each([
-    { provider: "lmstudio", api: "openai-completions", id: "small-model", expected: "tools" },
-    { provider: "custom-host", api: "ollama", id: "model:cloud", expected: false },
-  ] as const)("prepares $provider/$id using its $api policy", ({ expected, ...route }) => {
-    const config: OpenClawConfig = {
-      agents: { defaults: { experimental: { localModelLean: false } } },
-    };
-    const resolved = normalizeResolvedModel({
-      provider: route.provider,
-      model: model(route),
-      cfg: config,
-    });
-    expect(resolved).toHaveProperty("toolSearchMode", expected);
-    // Provider preference is separate from the ordinary enabled Tool Search default.
-    expect(toolSearchEnabled(resolved, config)).toBe(true);
-    expect(toolSearchEnabled(resolved, { ...config, tools: { toolSearch: false } })).toBe(false);
-    expect(config.tools).toBeUndefined();
-  });
-
-  it("uses the final transport and clears a previous attempt's preference", () => {
-    const original = model();
-    const local = normalizeResolvedModel({ provider: original.provider, model: original });
-    expect(local).toHaveProperty("toolSearchMode", "tools");
-    expect(toolSearchEnabled(local)).toBe(true);
-
-    const hosted = normalizeResolvedModel({
-      provider: original.provider,
-      model: local,
-      runtimeHooks: {
-        ...resolveRuntimeHooks(),
-        normalizeProviderTransportWithPlugin: () => ({
-          api: "openai-responses",
-          baseUrl: "https://hosted.example/v1",
-        }),
-      },
-    });
-    expect(hosted.baseUrl).toBe("https://hosted.example/v1");
-    expect(hosted).toHaveProperty("toolSearchMode", undefined);
-    expect(toolSearchEnabled(hosted)).toBe(true);
-    expect(local).toHaveProperty("toolSearchMode", "tools");
-    expect(toolSearchEnabled(local)).toBe(true);
-  });
-
   it("uses in-place model normalization for transport routing", () => {
     const resolved = normalizeResolvedModel({
       provider: "custom-host",

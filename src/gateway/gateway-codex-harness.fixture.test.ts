@@ -44,7 +44,6 @@ describe("native Codex fixture boundaries", () => {
             OPENAI_API_KEY: "synthetic-fixture-key",
             CODEX_API_KEY: "synthetic-codex-key",
             CEREBRAS_API_KEY: "synthetic-cerebras-key",
-            GROQ_API_KEY: "synthetic-groq-key",
             OPENAI_BASE_URL: baseUrl,
           },
           async () => {
@@ -71,7 +70,6 @@ describe("native Codex fixture boundaries", () => {
                 );
                 expect(instance.env.CODEX_API_KEY).toBeUndefined();
                 expect(instance.env.CEREBRAS_API_KEY).toBeUndefined();
-                expect(instance.env.GROQ_API_KEY).toBeUndefined();
                 expect(instance.env.OPENAI_BASE_URL).toBe(
                   authMode === "api-key" && baseUrl.trim() ? baseUrl : undefined,
                 );

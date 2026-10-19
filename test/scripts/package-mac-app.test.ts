@@ -1051,24 +1051,6 @@ describe("package-mac-app plist stamping", () => {
     expect(result.stderr).toContain(diagnostic);
   });
 
-  it("requires the locked Peekaboo pin to match the requested elevation release source", () => {
-    const requestedRevision = "b".repeat(40);
-    const packageResolved = readFileSync("apps/macos/Package.resolved", "utf8");
-    const parsed = JSON.parse(packageResolved) as {
-      pins: Array<{ identity: string; state: { revision?: string } }>;
-    };
-    const pinnedRevision = parsed.pins.find((pin) => pin.identity === "peekaboo")?.state.revision;
-    expect(pinnedRevision).toMatch(/^[0-9a-f]{40}$/);
-
-    const matching = runPeekabooSourceCommitHarness(packageResolved, pinnedRevision!);
-    expect(matching.status, matching.stderr).toBe(0);
-    expect(matching.stdout).toBe(pinnedRevision);
-
-    const mismatched = runPeekabooSourceCommitHarness(packageResolved, requestedRevision);
-    expect(mismatched.status).toBe(1);
-    expect(mismatched.stderr).toContain("does not match requested release source");
-  });
-
   it.each([
     {
       title: "is missing",

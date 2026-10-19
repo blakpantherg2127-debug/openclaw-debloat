@@ -62,12 +62,7 @@ async function buildSnapshot(
   );
 }
 
-const CUSTODIAN_SKILL_NAMES = [
-  "add-model-provider",
-  "cloud-image-bake",
-  "configure-channel",
-  "diagnose-gateway",
-] as const;
+const CUSTODIAN_SKILL_NAMES = ["configure-channel", "diagnose-gateway"] as const;
 
 async function writeCustodianSkillFixture(workspaceDir: string): Promise<void> {
   for (const name of CUSTODIAN_SKILL_NAMES) {

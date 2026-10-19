@@ -156,43 +156,6 @@ async function withTitleProvider(
 }
 
 describe("generated titles over the real OpenAI-compatible transport", () => {
-  it("disables configured native Ollama thinking only for the utility request", async () => {
-    await withTitleProvider(
-      "Utility thinking disabled",
-      async ({ cfg, agentDir, requests }) => {
-        const definition = cfg.models!.providers!.ollama!.models[1]!;
-        definition.reasoning = true;
-        definition.params = { think: true, num_ctx: 8192 };
-        await runIsolatedCompletion({
-          config: cfg,
-          agentId: "main",
-          agentDir,
-          provider: "ollama",
-          model: "qwen3.6:35b",
-          thinkLevel: "high",
-          systemPrompt: "Write a title.",
-          prompt: "Debug title generation.",
-          timeoutMs: 5_000,
-        });
-        await expect(
-          prepareDashboardSessionTitle({
-            cfg,
-            agentId: "main",
-            userMessage: "Debug title generation.",
-          }),
-        ).resolves.toBe("Utility thinking disabled");
-        expect(requests.map(({ url, body }) => ({ url, think: body.think }))).toEqual([
-          { url: "/api/chat", think: true },
-          { url: "/api/chat", think: false },
-        ]);
-        expect(requests[1]!.body.options).toMatchObject({ num_predict: 4096, num_ctx: 8192 });
-      },
-      undefined,
-      undefined,
-      "ollama",
-    );
-  });
-
   it("disables reasoning without expanding the title answer budget", async () => {
     await withTitleProvider("Utility budget verified", async ({ cfg, requests }) => {
       for (const definition of cfg.models!.providers![provider]!.models) {

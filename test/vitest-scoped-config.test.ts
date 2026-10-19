@@ -19,9 +19,6 @@ import { createCliVitestConfig } from "./vitest/vitest.cli.config.ts";
 import { createCronVitestConfig } from "./vitest/vitest.cron.config.ts";
 import { databaseWorkerCoreTestFiles } from "./vitest/vitest.database-worker-core-paths.mjs";
 import { createDatabaseWorkerWatchVitestConfig } from "./vitest/vitest.database-worker-watch.config.ts";
-import { databaseWorkerExtensionTestFiles } from "./vitest/vitest.extension-database-workers-paths.mjs";
-import { createExtensionDatabaseWorkersVitestConfig } from "./vitest/vitest.extension-database-workers.config.ts";
-import { createExtensionMatrixVitestConfig } from "./vitest/vitest.extension-matrix.config.ts";
 import { createExtensionTelegramVitestConfig } from "./vitest/vitest.extension-telegram.config.ts";
 import { diagnosticForksPool } from "./vitest/vitest.forks-pool.ts";
 import { createGatewayClientVitestConfig } from "./vitest/vitest.gateway-client.config.ts";
@@ -346,14 +343,6 @@ describe("scoped vitest configs", () => {
       names: ["agents", "infra"],
       existing: "src/agents/memory-write-provenance.test.ts",
       createWorker: createInfraVitestConfig,
-    },
-    {
-      root: "extensions/matrix",
-      createOwner: createExtensionMatrixVitestConfig,
-      workerFiles: databaseWorkerExtensionTestFiles,
-      names: ["extension-matrix", "extension-database-workers"],
-      existing: "extensions/matrix/src/matrix/client/storage.test.ts",
-      createWorker: createExtensionDatabaseWorkersVitestConfig,
     },
   ])(
     "discovers current and new $root watch files once across database owners",

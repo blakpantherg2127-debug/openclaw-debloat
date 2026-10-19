@@ -18,23 +18,6 @@ let pluginMetadata: SystemAgentPluginMetadataTestSnapshot | undefined;
 const parseSystemAgentOperation: typeof parseSystemAgentOperationImpl = (...args) =>
   pluginMetadata!.run(() => parseSystemAgentOperationImpl(...args));
 
-function expectConfigSet(path: string, value: string) {
-  expect(parseSystemAgentOperation(`config set ${path} ${value}`)).toEqual({
-    kind: "config-set",
-    path,
-    value,
-  });
-}
-
-function expectConfigSetRef(path: string, source: "env" | "store", id: string) {
-  expect(parseSystemAgentOperation(`config set-ref ${path} ${source} ${id}`)).toEqual({
-    kind: "config-set-ref",
-    path,
-    source,
-    id,
-  });
-}
-
 function expectInvalidConfigPath(command: string) {
   expect(parseSystemAgentOperation(command)).toEqual({
     kind: "none",
@@ -120,57 +103,6 @@ describe("parseSystemAgentOperation", () => {
     expect(parseSystemAgentOperation("restart gateway")).toEqual({ kind: "gateway-restart" });
     expect(parseSystemAgentOperation("start gateway")).toEqual({ kind: "gateway-start" });
     expect(parseSystemAgentOperation("stop gateway")).toEqual({ kind: "gateway-stop" });
-  });
-
-  it("parses config and doctor repair operations", () => {
-    expect(parseSystemAgentOperation("validate config")).toEqual({ kind: "config-validate" });
-    expectConfigSet("gateway.port", "19001");
-    expectConfigSet("channels.defaults.groupPolicy", '"open"');
-    expectConfigSet("channels.modelByChannel.telegram.chat", '"openai/gpt-5.5"');
-    expectConfigSet('channels.modelByChannel["token=prod"].chat', '"openai/gpt-5.5"');
-    expectConfigSet('channels.synology-chat.accounts["prod.guild"].webhookUrl', '"secret"');
-    expectConfigSet(String.raw`channels.synology-chat.accounts.prod\ guild.webhookUrl`, '"secret"');
-    expectConfigSet('channels.synology-chat.accounts["prod=us"].webhookUrl', '"secret"');
-    expectConfigSet('plugins.entries.codex.config.appServer.headers["X-Test"]', '"secret"');
-    expectConfigSet('channels.synology-chat.accounts["token=prod"].webhookUrl', '"secret"');
-    expectConfigSet(String.raw`plugins.entries.codex.config.appServer.headers.X\-Test`, '"secret"');
-    expectConfigSet(String.raw`channels.synology-chat.accounts.token\=prod.webhookUrl`, '"secret"');
-    expectConfigSet('channels.synology-chat.accounts["token=prod"].webhookPath', '"/hook"');
-    expectConfigSet(String.raw`channels.synology-chat.accounts.token\=prod.webhookPath`, '"/hook"');
-    expectConfigSetRef('channels.telegram.accounts["prod=us"].botToken', "env", "TELEGRAM_TOKEN");
-    expectConfigSetRef(
-      String.raw`channels.telegram.accounts.prod\=us.botToken`,
-      "env",
-      "TELEGRAM_TOKEN",
-    );
-    expectConfigSet('broadcast["token=prod"]', '["telegram"]');
-    expectInvalidConfigPath('config set hooks.mappings["token=abcDEF123"].agentId main');
-    expectInvalidConfigPath(
-      'config set channels.buzz.groups["gateway.auth.token=ACTUAL_GATEWAY_TOKEN"].enabled true',
-    );
-    expectInvalidConfigPath("config set gateway.auth..token very-secret");
-    expectInvalidConfigPath("config set gateway.auth.token=very-secret");
-    expectInvalidConfigPath("config set gateway.auth.token=very-secret please");
-    expectInvalidConfigPath('config set channels.synology-chat["webhookUrl=abcDEF123"] please');
-    for (const command of [
-      String.raw`config set gateway.auth.token\=very-secret please`,
-      String.raw`config set gateway.auth.token\ very-secret please`,
-      "config set gateway.auth.tokenabcDEF123 please",
-      "config set gateway.auth.token_abcDEF123 please",
-      "config set gateway.auth.token$abcDEF123 please",
-      'config set gateway.auth["token=very-secret"] please',
-      'config set gateway.auth["token very-secret"] please',
-      'config set gateway.auth["token:very-secret"] please',
-      'config set gateway.auth["token=very-secret"].nested please',
-    ]) {
-      expectInvalidConfigPath(command);
-    }
-    expectConfigSetRef("gateway.auth.token", "env", "GATEWAY_TOKEN");
-    expectConfigSetRef("gateway.auth.token", "store", "GATEWAY_TOKEN");
-    expectInvalidConfigPath("config set-ref gateway.auth.tokenabcDEF123 env GATEWAY_TOKEN");
-    expectInvalidConfigPath("config set-ref gateway.auth.token=abcDEF123 env GATEWAY_TOKEN");
-    expectInvalidConfigPath("config set-ref gateway.auth.token env 123:actual-gateway-token");
-    expect(parseSystemAgentOperation("doctor fix")).toEqual({ kind: "doctor-fix" });
   });
 
   it("parses plugin management operations", () => {

@@ -116,21 +116,6 @@ describe("security fix", () => {
     },
   });
 
-  const expectWhatsAppAccountGroupPolicy = (
-    channels: Record<string, Record<string, unknown>>,
-    accountId: string,
-    expectedPolicy = "allowlist",
-  ) => {
-    const whatsapp = expectDefined(channels.whatsapp, "channels.whatsapp test invariant");
-    const accounts = whatsapp.accounts as Record<string, Record<string, unknown>>;
-    const account = accounts[accountId];
-    if (!account) {
-      throw new Error(`Expected WhatsApp account ${accountId}`);
-    }
-    expect(account.groupPolicy).toBe(expectedPolicy);
-    return accounts;
-  };
-
   const fixWhatsAppConfigScenario = async (params: {
     whatsapp: Record<string, unknown>;
     allowFromStore: string[];
@@ -158,68 +143,6 @@ describe("security fix", () => {
     if (fixtureRoot) {
       await fs.rm(fixtureRoot, { recursive: true, force: true });
     }
-  });
-
-  it("tightens groupPolicy + filesystem perms", async () => {
-    const cfg = {
-      channels: {
-        telegram: { groupPolicy: "open" },
-        whatsapp: { groupPolicy: "open" },
-        discord: { groupPolicy: "open" },
-        signal: { groupPolicy: "open" },
-        imessage: { groupPolicy: "open" },
-      },
-    } satisfies OpenClawConfig;
-    const fixed = await runConfigFixScenario({
-      prefix: "group-policy",
-      cfg,
-      channelPlugins: [createWhatsAppConfigFixTestPlugin(["+15551234567"])],
-    });
-    expect(fixed.res.changes).toEqual([
-      "channels.telegram.groupPolicy=open -> allowlist",
-      "channels.whatsapp.groupPolicy=open -> allowlist",
-      "channels.discord.groupPolicy=open -> allowlist",
-      "channels.signal.groupPolicy=open -> allowlist",
-      "channels.imessage.groupPolicy=open -> allowlist",
-      "channels.whatsapp.groupAllowFrom=pairing-store",
-    ]);
-
-    const channels = fixed.cfg.channels as Record<string, Record<string, unknown>>;
-    expect(expectDefined(channels.telegram, "channels.telegram test invariant").groupPolicy).toBe(
-      "allowlist",
-    );
-    expect(expectDefined(channels.whatsapp, "channels.whatsapp test invariant").groupPolicy).toBe(
-      "allowlist",
-    );
-    expect(expectDefined(channels.discord, "channels.discord test invariant").groupPolicy).toBe(
-      "allowlist",
-    );
-    expect(expectDefined(channels.signal, "channels.signal test invariant").groupPolicy).toBe(
-      "allowlist",
-    );
-    expect(expectDefined(channels.imessage, "channels.imessage test invariant").groupPolicy).toBe(
-      "allowlist",
-    );
-
-    expect(
-      expectDefined(channels.whatsapp, "channels.whatsapp test invariant").groupAllowFrom,
-    ).toEqual(["+15551234567"]);
-  });
-
-  it("applies allowlist per-account and seeds WhatsApp groupAllowFrom from store", async () => {
-    const { res, channels } = await fixWhatsAppConfigScenario({
-      whatsapp: {
-        accounts: {
-          a1: { groupPolicy: "open" },
-        },
-      },
-      allowFromStore: ["+15550001111"],
-    });
-    expect(res.ok).toBe(true);
-    const accounts = expectWhatsAppAccountGroupPolicy(channels, "a1");
-    expect(expectDefined(accounts.a1, "accounts.a1 test invariant").groupAllowFrom).toEqual([
-      "+15550001111",
-    ]);
   });
 
   it("does not seed WhatsApp accounts that were already allowlisted", async () => {

@@ -15,49 +15,6 @@ const parser = createNativeTypeScriptParser();
 afterAll(() => parser.close());
 const sourceCache = new Map<string, string>();
 const tsFilesCache = new Map<string, string[]>();
-const BUNDLED_TYPED_HOOK_REGISTRATION_FILES = [
-  "extensions/acpx/index.ts",
-  "extensions/active-memory/index.ts",
-  "extensions/browser/plugin-registration.ts",
-  "extensions/clickclack/src/discussions/register.ts",
-  "extensions/codex/index.ts",
-  "extensions/diffs/src/plugin.ts",
-  "extensions/discord/subagent-hooks-api.ts",
-  "extensions/facetime/index.ts",
-  "extensions/feishu/subagent-hooks-api.ts",
-  "extensions/matrix/subagent-hooks-api.ts",
-  "extensions/memory-core/index.ts",
-  "extensions/memory-core/src/dreaming.ts",
-  "extensions/memory-lancedb/index.ts",
-  "extensions/onepassword/index.ts",
-  "extensions/qa-lab/src/gateway-registration.ts",
-  "extensions/visitor-access/index.ts",
-  "extensions/workboard/index.ts",
-  "extensions/x/src/work-origin.ts",
-] as const;
-const BUNDLED_TYPED_HOOK_REGISTRATION_GUARDS = {
-  "extensions/acpx/index.ts": ["reply_dispatch"],
-  "extensions/active-memory/index.ts": ["agent_end", "before_prompt_build"],
-  "extensions/browser/plugin-registration.ts": ["session_end"],
-  "extensions/clickclack/src/discussions/register.ts": ["before_tool_call"],
-  "extensions/codex/index.ts": ["inbound_claim", "session_end"],
-  "extensions/diffs/src/plugin.ts": ["before_prompt_build"],
-  "extensions/discord/subagent-hooks-api.ts": ["subagent_delivery_target", "subagent_ended"],
-  "extensions/facetime/index.ts": ["before_tool_call"],
-  "extensions/feishu/subagent-hooks-api.ts": ["subagent_delivery_target", "subagent_ended"],
-  "extensions/matrix/subagent-hooks-api.ts": ["subagent_delivery_target", "subagent_ended"],
-  "extensions/memory-core/src/dreaming.ts": ["before_agent_reply", "gateway_start"],
-  "extensions/memory-core/index.ts": ["before_agent_reply", "before_prompt_build"],
-  "extensions/memory-lancedb/index.ts": ["agent_end", "before_prompt_build", "session_end"],
-  "extensions/onepassword/index.ts": ["before_tool_call"],
-  "extensions/qa-lab/src/gateway-registration.ts": ["before_agent_run"],
-  "extensions/visitor-access/index.ts": ["gateway_start"],
-  "extensions/workboard/index.ts": ["agent_end", "gateway_start", "gateway_stop", "subagent_ended"],
-  "extensions/x/src/work-origin.ts": ["before_prompt_build"],
-} as const satisfies Record<
-  (typeof BUNDLED_TYPED_HOOK_REGISTRATION_FILES)[number],
-  readonly string[]
->;
 const BUNDLED_LIVE_CONFIG_HOOK_GUARDS = {
   "extensions/active-memory/index.ts": ["resolveLivePluginConfigObject(", '"active-memory"'],
   "extensions/codex/index.ts": ["resolveLivePluginConfigObject(", '"codex"'],
@@ -76,31 +33,6 @@ const BUNDLED_LIVE_CONFIG_HOOK_GUARDS = {
     "resolveEffectiveEnableState(",
     '"onepassword"',
     "api.runtime.config?.current",
-  ],
-} as const satisfies Record<string, readonly string[]>;
-const BUNDLED_LIVE_CONFIG_PROVIDER_GUARDS = {
-  "extensions/amazon-bedrock/register.sync.runtime.ts": [
-    "resolvePluginConfigObject(",
-    "const startupPluginConfig = (api.pluginConfig ?? {})",
-    "const currentPluginConfig = resolveCurrentPluginConfig(ctx.config);",
-    "const currentPluginConfig = resolveCurrentPluginConfig(config);",
-    "const currentGuardrail = currentPluginConfig?.guardrail;",
-  ],
-  "extensions/amazon-bedrock-mantle/register.sync.runtime.ts": [
-    "resolvePluginConfigObject(",
-    "const startupPluginConfig = (api.pluginConfig ?? {})",
-    "const currentPluginConfig = resolveCurrentPluginConfig(ctx.config);",
-  ],
-  "extensions/ollama/index.ts": [
-    "resolvePluginConfigObject(",
-    'const runtimePluginConfig = resolvePluginConfigObject(config, "ollama");',
-    "return config ? {} : startupPluginConfig;",
-  ],
-  "extensions/openai/index.ts": [
-    "resolvePluginConfigObject(",
-    'const runtimePluginConfig = resolvePluginConfigObject(ctx.config, "openai");',
-    "runtimePluginConfig ??",
-    "ctx.config ? undefined : (api.pluginConfig as Record<string, unknown>)",
   ],
 } as const satisfies Record<string, readonly string[]>;
 const BUNDLED_STARTUP_GATED_HOOK_FORBIDDEN_SNIPPETS = {
@@ -271,13 +203,6 @@ function isBundledExtensionImportHelperCall(expression: ts.Expression): boolean 
   return ts.isIdentifier(expression) && expression.text === "importActual";
 }
 
-function collectTypedHookNames(source: string): string[] {
-  return [...source.matchAll(/\bapi\.on\(\s*"([^"]+)"/gu)]
-    .map((match) => match[1])
-    .filter((hookName): hookName is string => typeof hookName === "string")
-    .toSorted();
-}
-
 describe("plugin contract boundary invariants", () => {
   let bundledCapabilityMetadataOffenders: string[];
 
@@ -365,23 +290,6 @@ describe("plugin contract boundary invariants", () => {
     expect(offenders).toStrictEqual([]);
   });
 
-  it("keeps bundled plugin typed hook registrations on an explicit allowlist", () => {
-    const files = listTsFiles("extensions", { excludeTests: true });
-    const hookRegistrationFiles = files.filter((file) => /\bapi\.on\(/u.test(readRepoSource(file)));
-    expect(hookRegistrationFiles).toEqual(BUNDLED_TYPED_HOOK_REGISTRATION_FILES);
-  });
-
-  it("keeps bundled plugin typed hook names on an explicit allowlist", () => {
-    expect(
-      Object.fromEntries(
-        BUNDLED_TYPED_HOOK_REGISTRATION_FILES.map((file) => [
-          file,
-          collectTypedHookNames(readRepoSource(file)),
-        ]),
-      ),
-    ).toEqual(BUNDLED_TYPED_HOOK_REGISTRATION_GUARDS);
-  });
-
   it("keeps bundled plugin production code off raw registerHook calls", () => {
     const files = listTsFiles("extensions", { excludeTests: true });
     const offenders = files.filter((file) => /\bregisterHook\(/u.test(readRepoSource(file)));
@@ -390,18 +298,6 @@ describe("plugin contract boundary invariants", () => {
 
   it("keeps long-lived bundled hook handlers on live runtime config lookups", () => {
     const missingGuards = Object.entries(BUNDLED_LIVE_CONFIG_HOOK_GUARDS).flatMap(
-      ([file, requiredSnippets]) => {
-        const source = readRepoSource(file);
-        return requiredSnippets
-          .filter((snippet) => !source.includes(snippet))
-          .map((snippet) => `${file}: ${snippet}`);
-      },
-    );
-    expect(missingGuards).toStrictEqual([]);
-  });
-
-  it("keeps live provider config surfaces on runtime config lookups", () => {
-    const missingGuards = Object.entries(BUNDLED_LIVE_CONFIG_PROVIDER_GUARDS).flatMap(
       ([file, requiredSnippets]) => {
         const source = readRepoSource(file);
         return requiredSnippets

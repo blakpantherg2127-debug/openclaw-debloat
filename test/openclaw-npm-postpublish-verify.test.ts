@@ -29,14 +29,8 @@ import {
   writeStableRootRuntimeAliases,
 } from "../scripts/runtime-postbuild.mts";
 import { RUNTIME_DEPENDENCY_OWNERSHIP_RELATIVE_PATH } from "../src/infra/runtime-dependency-ownership.js";
-import {
-  resolveRuntimeWorkerArgv,
-  resolveRuntimeWorkerUrl,
-} from "../src/infra/runtime-worker-url.js";
 import { WORKER_BUNDLE_ENTRY_PATH } from "../src/shared/worker-bundle-hash.js";
-import { withEnv } from "../src/test-utils/env.js";
 import { createScriptTestHarness } from "./scripts/test-helpers.js";
-import { toolingTsEntrypoints } from "./scripts/tooling-ts-runtime.test-support.js";
 
 const { createTempDir } = createScriptTestHarness();
 const makeInstalledPackageRoot = () => createTempDir("openclaw-postpublish-");
@@ -381,46 +375,6 @@ describe("collectInstalledPackageErrors", () => {
     expect(errors).not.toContain(
       "installed package includes unresolved legacy context engine runtime loader; rebuild with a bundler-traceable LegacyContextEngine import.",
     );
-  });
-
-  function expectedMissingManifests(packageRoot: string) {
-    return expect.arrayContaining(
-      ["ollama", "lmstudio"].flatMap((id) => [
-        `installed bundled extension manifest missing: ${join(packageRoot, "dist/extensions", id, "package.json")}.`,
-        `installed bundled plugin artifact missing: dist/extensions/${id}/openclaw.plugin.json.`,
-      ]),
-    );
-  }
-
-  it("verifies every bundled manifest when the build filter exists before module initialization", () => {
-    const packageRoot = makeInstalledPackageRoot();
-
-    const probe = withEnv({ OPENCLAW_BUNDLED_PLUGIN_BUILD_IDS: "ollama" }, () =>
-      spawnSync(
-        process.execPath,
-        [
-          ...resolveRuntimeWorkerArgv(
-            resolveRuntimeWorkerUrl(toolingTsEntrypoints.npmPostpublish),
-          ).slice(0, -1),
-          "--input-type=module",
-          "--eval",
-          [
-            `import { collectInstalledBundledExtensionManifestErrors } from ${JSON.stringify(resolveRuntimeWorkerUrl(toolingTsEntrypoints.npmPostpublish).href)};`,
-            `process.stdout.write(JSON.stringify(collectInstalledBundledExtensionManifestErrors(${JSON.stringify(packageRoot)})));`,
-          ].join("\n"),
-        ],
-        {
-          cwd: process.cwd(),
-          encoding: "utf8",
-          env: process.env,
-          timeout: 30_000,
-        },
-      ),
-    );
-
-    expect(probe.error).toBeUndefined();
-    expect(probe.status, probe.stderr).toBe(0);
-    expect(JSON.parse(probe.stdout)).toEqual(expectedMissingManifests(packageRoot));
   });
 });
 

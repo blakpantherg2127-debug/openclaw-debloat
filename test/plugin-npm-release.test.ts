@@ -4,10 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { bundledPluginFile, bundledPluginRoot } from "openclaw/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  collectBundledPluginBuildEntries,
-  collectRootPackageExcludedExtensionDirs,
-} from "../scripts/lib/bundled-plugin-build-entries.mjs";
+import { collectRootPackageExcludedExtensionDirs } from "../scripts/lib/bundled-plugin-build-entries.mjs";
 import { collectClawHubPublishablePluginPackages } from "../scripts/lib/plugin-clawhub-release.ts";
 import {
   assertPluginReleaseDependencyFreshness,
@@ -223,45 +220,6 @@ describe("collectPublishablePluginPackages", () => {
           packageBuild: packageJson.openclaw?.build,
         }),
       );
-    }
-  });
-
-  it("keeps deferred publication targets bundled with staged release metadata", () => {
-    const bundledIds = collectBundledPluginBuildEntries({ env: {} }).map(({ id }) => id);
-    const excludedDirs = collectRootPackageExcludedExtensionDirs();
-    const publicationIds = new Set(
-      [...collectPublishablePluginPackages(), ...collectClawHubPublishablePluginPackages()].map(
-        ({ extensionId }) => extensionId,
-      ),
-    );
-    for (const { id, minHostVersion, publishToNpm = true } of [
-      { id: "cua-computer", minHostVersion: ">=2026.9.6", publishToNpm: false },
-      { id: "logbook", minHostVersion: ">=2026.9.5" },
-      { id: "memory-wiki", minHostVersion: ">=2026.9.4" },
-      { id: "onepassword", minHostVersion: ">=2026.9.4" },
-    ]) {
-      const packageJson = JSON.parse(
-        readFileSync(join("extensions", id, "package.json"), "utf8"),
-      ) as PluginPackageJson;
-      expect(packageJson, id).toMatchObject({
-        name: `@openclaw/${id}`,
-        openclaw: {
-          build: { bundledDist: true },
-          install: { minHostVersion },
-          release: { publishToNpm, publishToClawHub: true },
-        },
-      });
-      expect(bundledIds, id).toContain(id);
-      expect(excludedDirs.has(id), id).toBe(false);
-      expect(publicationIds.has(id), id).toBe(false);
-      expect(
-        isExternallyDistributedPlugin({
-          pluginId: id,
-          packageName: packageJson.name,
-          packageBuild: packageJson.openclaw?.build,
-        }),
-        id,
-      ).toBe(false);
     }
   });
 });

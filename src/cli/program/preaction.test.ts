@@ -1,6 +1,5 @@
 // Preaction tests cover CLI preaction hooks and command context setup.
 import { Command } from "commander";
-import { repoInstallSpec } from "openclaw/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { loggingState } from "../../logging/state.js";
 import { captureEnv } from "../../test-utils/env.js";
@@ -11,8 +10,6 @@ import {
   registerPreActionCommandFixtures,
   registerNativeExecutorPreActionTests,
 } from "./preaction.test-helpers.js";
-
-const DISCORD_REPO_INSTALL_SPEC = repoInstallSpec("discord");
 
 const setVerboseMock = vi.fn();
 const emitCliBannerMock = vi.fn();
@@ -455,32 +452,6 @@ describe("registerPreActionHooks", () => {
 
     expect(ensureConfigReadyMock).not.toHaveBeenCalled();
     expect(ensurePluginRegistryLoadedMock).not.toHaveBeenCalled();
-  });
-
-  it("only allows invalid config for explicit official recovery reinstall requests", async () => {
-    const scenarios: Array<{ args: string[]; allowInvalid?: true }> = [
-      { args: ["@openclaw/discord"], allowInvalid: true },
-      { args: ["@openclaw/discord@2026.5.22"], allowInvalid: true },
-      { args: ["@openclaw/brave-plugin"], allowInvalid: true },
-      { args: ["@openclaw/slack"], allowInvalid: true },
-      { args: ["alpha"] },
-      { args: [DISCORD_REPO_INSTALL_SPEC], allowInvalid: true },
-      { args: ["@openclaw/discord", "--marketplace", "local/repo"] },
-    ];
-    for (const { args, allowInvalid } of scenarios) {
-      vi.clearAllMocks();
-      await runPreAction({
-        parseArgv: ["plugins", "install", ...args],
-        processArgv: ["node", "openclaw", "plugins", "install", ...args],
-      });
-
-      expect(ensureConfigReadyMock).toHaveBeenCalledWith({
-        runtime: runtimeMock,
-        measure: expect.any(Function),
-        commandPath: ["plugins", "install"],
-        ...(allowInvalid ? { allowInvalid } : {}),
-      });
-    }
   });
 
   it("skips help/version preaction and respects banner opt-out", async () => {

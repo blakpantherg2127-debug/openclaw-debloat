@@ -488,11 +488,9 @@ it("keeps runtime memory registrations through local command preparation", async
 });
 describe("agent command static capabilities", () => {
   const cases = [
-    { inventory: "empty", contextTokens: 1_000_000, thinking: "medium" },
     { inventory: "authored", contextTokens: 640_000, thinking: "off" },
     { inventory: "replace", contextTokens: 320_000, thinking: "off" },
     { inventory: "generic", contextTokens: 200_000, thinking: "off" },
-    { inventory: "explicit off", contextTokens: 1_000_000, thinking: "off" },
   ] as const;
   const key = "synthetic-static-capability-key";
 
@@ -616,7 +614,6 @@ describe("agent command static capabilities", () => {
               "--message",
               "Reply with STATIC_OK only.",
               "--json",
-              ...(testCase.inventory === "explicit off" ? ["--thinking", "off"] : []),
             ],
             {
               cwd: process.cwd(),

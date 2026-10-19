@@ -62,31 +62,6 @@ describe("scripts/test-live-shard", () => {
     });
   });
 
-  it("covers every native live test and tracks provider-filtered release fanout", () => {
-    const selected = RELEASE_LIVE_TEST_SHARDS.flatMap((shard) =>
-      selectLiveShardFiles(shard, allFiles).map((file) => ({ file, shard })),
-    );
-    const selectedFiles = selected.map(({ file }) => file);
-    const duplicateFiles = selectedFiles.filter(
-      (file, index) => selectedFiles.indexOf(file) !== index,
-    );
-    const musicProviderFanout = selected
-      .filter(({ file }) => file === "extensions/music-generation-providers.live.test.ts")
-      .map(({ shard }) => shard)
-      .toSorted();
-
-    expect(allFiles.length).toBeGreaterThan(0);
-    expect([...new Set(selectedFiles)].toSorted((a, b) => a.localeCompare(b))).toEqual(allFiles);
-    expect(duplicateFiles).toEqual([
-      "src/agents/zai.live.test.ts",
-      "extensions/music-generation-providers.live.test.ts",
-    ]);
-    expect(musicProviderFanout).toEqual([
-      "native-live-extensions-media-music-google",
-      "native-live-extensions-media-music-minimax",
-    ]);
-  });
-
   it("keeps aggregate shard aliases available outside the release partition", () => {
     expect(LIVE_TEST_SHARDS).toEqual([
       ...RELEASE_LIVE_TEST_SHARDS,
@@ -166,26 +141,6 @@ describe("scripts/test-live-shard", () => {
         addLiveShardReportArgs([], reportPath),
       ),
     ).toContain("--reporter=json");
-  });
-
-  it("prepares the private QA runtime for live shards that load its built API", () => {
-    const expected = {
-      env: { OPENCLAW_BUILD_PRIVATE_QA: "1" },
-      profile: "qaRuntime",
-      requiredArtifact: "dist/extensions/qa-lab/runtime-api.js",
-    };
-
-    expect(
-      resolveLiveShardPreparation(
-        selectLiveShardFiles("native-live-extensions-o-z-other", allFiles),
-      ),
-    ).toEqual(expected);
-    expect(
-      resolveLiveShardPreparation(selectLiveShardFiles("native-live-extensions-o-z", allFiles)),
-    ).toEqual(expected);
-    expect(
-      resolveLiveShardPreparation(selectLiveShardFiles("native-live-extensions-xai", allFiles)),
-    ).toBeNull();
   });
 
   it("prepares gateway profile shards with observable source-runtime diagnostics", () => {
